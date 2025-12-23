@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지 - 주문 목록 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main
+      class="max-w-7xl mx-auto w-full px-6 py-12 grid gap-8 lg:grid-cols-[260px_1fr] flex-grow"
+    >
+      <%- include('./partials/nav.ejs', { activeTab }) %>
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+            주문 목록 / 배송조회
+          </p>
+          <h1 class="text-3xl font-bold">나의 주문 현황</h1>
+          <p class="text-sm text-slate-500 mt-2">
+            최근 주문한 상품의 배송 상태를 확인하실 수 있습니다.
+          </p>
+        </header>
+
+        <!-- 필터 영역 -->
+        <div class="flex flex-wrap gap-3 mb-6">
+          <input
+            type="date"
+            id="searchStartDate"
+            value="<%= filters.startDate %>"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-purple-400"
+            onchange="filterOrders()"
+          />
+          <span class="self-center text-slate-400">~</span>
+          <input
+            type="date"
+            id="searchEndDate"
+            value="<%= filters.endDate %>"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-purple-400"
+            onchange="filterOrders()"
+          />
+          <div class="flex-1"></div>
+          <div
+            class="flex gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm w-full md:w-72 bg-white"
+          >
+            <input
+              type="text"
+              id="searchInput"
+              value="<%= filters.search %>"
+              class="flex-1 focus:outline-none"
+              placeholder="주문번호 / 상품명 검색"
+              onkeyup="filterOrders()"
+            />
+            <span class="text-slate-400 cursor-pointer">⌕</span>
+          </div>
+        </div>
+
+        <!-- 주문 목록 -->
+        <div class="grid gap-4" id="orderList">
+          <% if (mypage.orders && mypage.orders.length > 0) { %> <%
+          mypage.orders.forEach((order) => { %>
+          <article
+            class="order-item rounded-3xl bg-white border border-slate-100 p-6 shadow-sm flex flex-col md:flex-row gap-6 transition hover:shadow-md"
+            data-id="<%= order.id %>"
+            data-name="<%= order.name %>"
+            data-date="<%= order.date %>"
+          >
+            <!-- 이미지 -->
+            <div
+              class="w-full md:w-32 h-32 rounded-xl bg-gray-50 border border-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center"
+            >
+              <% if (order.cover) { %>
+              <img
+                src="<%= order.cover %>"
+                alt="대표 이미지"
+                class="w-full h-full object-contain"
+              />
+              <% } else { %>
+              <span class="text-xs text-slate-300">No Image</span>
+              <% } %>
+            </div>
+
+            <!-- 정보 -->
+            <div class="flex-1 flex flex-col justify-between">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      class="text-xs font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded"
+                      ><%= order.date %></span
+                    >
+                    <span class="text-xs text-slate-300">|</span>
+                    <span class="text-xs font-bold text-slate-500"
+                      ><%= order.id %></span
+                    >
+                  </div>
+                  <h3
+                    class="text-lg font-bold text-slate-800 line-clamp-2 hover:text-purple-600 transition cursor-pointer"
+                  >
+                    <%= order.name %>
+                  </h3>
+                </div>
+
+                <div class="text-right">
+                  <% if (order.status === '배송 중') { %>
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100"
+                    >🚚 배송 중</span
+                  >
+                  <% } else if (order.status === '배송 완료') { %>
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100"
+                    >✅ 배송 완료</span
+                  >
+                  <% } else if (order.status === '주문 취소') { %>
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200"
+                    >🚫 주문 취소</span
+                  >
+                  <% } else { %>
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-600 border border-purple-100"
+                    >💳 <%= order.status %></span
+                  >
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- 배송예정일 표시 -->
+              <div class="text-xs text-slate-500 mb-2">
+                <% if (order.status === '배송 완료') { %>
+                <span class="font-bold text-emerald-600">배송완료일:</span> <%=
+                order.eta %> <% } else { %>
+                <span class="font-bold">배송예정일:</span> <%= order.eta %> <% }
+                %>
+              </div>
+
+              <div
+                class="flex items-end justify-between border-t border-slate-50 pt-3 mt-1"
+              >
+                <p class="text-xl font-bold text-slate-900">
+                  <%= order.price %>원
+                  <span class="text-sm font-normal text-slate-400">
+                    (총 <%= order.qty %>개)</span
+                  >
+                </p>
+
+                <div class="flex gap-2 items-center">
+                  <!-- 결제 완료 상태일 때 주문 취소 버튼 표시 -->
+                  <% if (order.status === '결제 완료') { %>
+                  <button
+                    onclick="cancelOrder('<%= order.id %>')"
+                    class="px-4 py-2 rounded-xl border border-red-200 text-xs font-bold text-red-500 hover:bg-red-50 transition"
+                  >
+                    주문 취소
+                  </button>
+                  <% } %>
+
+                  <!-- 상세보기 클릭 -->
+                  <button
+                    onclick="openOrderDetail('<%= order.id %>', '<%= order.status %>', '<%= order.date %>')"
+                    class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    상세 보기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+          <% }) %> <% } else { %>
+          <div
+            class="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200"
+          >
+            <span class="text-5xl block mb-3 opacity-30">📦</span>
+            <p class="text-slate-500 mb-4">주문 내역이 없습니다.</p>
+            <a
+              href="/"
+              class="text-purple-600 font-bold hover:underline text-sm"
+              >쇼핑하러 가기 →</a
+            >
+          </div>
+          <% } %>
+          <div
+            id="noSearchResult"
+            class="hidden py-24 text-center text-slate-400"
+          >
+            <span class="text-4xl block mb-3 opacity-50">🔍</span>
+            <p>검색 조건에 맞는 주문 내역이 없습니다.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 주문 상세 모달 -->
+    <div
+      id="orderModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeOrderModal()"
+      ></div>
+      <div
+        class="bg-white w-11/12 md:max-w-2xl mx-auto rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh] relative z-50"
+      >
+        <div
+          class="p-5 border-b border-gray-100 flex justify-between items-center bg-slate-50"
+        >
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">주문 상세 내역</h3>
+            <p
+              class="text-xs text-slate-500 font-mono mt-0.5"
+              id="modalOrderId"
+            ></p>
+          </div>
+          <button
+            onclick="closeOrderModal()"
+            class="text-gray-400 hover:text-gray-600 p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="p-0 overflow-y-auto flex-1 custom-scrollbar">
+          <div id="modalItemList" class="divide-y divide-slate-100">
+            <!-- JS로 아이템 추가됨 -->
+          </div>
+        </div>
+
+        <div
+          id="modalFooter"
+          class="p-4 border-t border-gray-100 bg-white flex items-center justify-end gap-2"
+        >
+          <button
+            onclick="closeOrderModal()"
+            class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition text-sm"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      function filterOrders() {
+        const searchInput = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const startDateVal = document.getElementById("searchStartDate").value;
+        const endDateVal = document.getElementById("searchEndDate").value;
+
+        const items = document.querySelectorAll(".order-item");
+        let hasVisibleItem = false;
+
+        items.forEach((item) => {
+          const id = item.getAttribute("data-id").toLowerCase();
+          const name = item.getAttribute("data-name").toLowerCase();
+          const dateStr = item.getAttribute("data-date").replace(/\./g, "-");
+          const isSearchMatch =
+            id.includes(searchInput) || name.includes(searchInput);
+          let isDateMatch = true;
+          if (startDateVal && endDateVal) {
+            if (dateStr < startDateVal || dateStr > endDateVal)
+              isDateMatch = false;
+          }
+
+          if (isSearchMatch && isDateMatch) {
+            item.classList.remove("hidden");
+            hasVisibleItem = true;
+          } else {
+            item.classList.add("hidden");
+          }
+        });
+
+        const noResultDiv = document.getElementById("noSearchResult");
+        if (items.length > 0) {
+          if (!hasVisibleItem) noResultDiv.classList.remove("hidden");
+          else noResultDiv.classList.add("hidden");
+        }
+      }
+
+      async function addToCart(productCode) {
+        try {
+          const res = await fetch("/cart/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productCode, qty: 1 }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            if (
+              confirm("장바구니에 담았습니다. 장바구니로 이동하시겠습니까?")
+            ) {
+              location.href = "/cart";
+            }
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // 주문 취소 함수
+      async function cancelOrder(orderId) {
+        if (
+          !confirm(
+            "정말 주문을 취소하시겠습니까? 취소 후에는 복구가 불가능합니다."
+          )
+        )
+          return;
+
+        try {
+          const res = await fetch("/mypage/orders/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("주문이 취소되었습니다.");
+            location.reload();
+          } else {
+            alert(data.message || "주문 취소 실패");
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+
+      async function openOrderDetail(orderId, status, dateStr) {
+        try {
+          const res = await fetch(`/mypage/orders/detail/${orderId}`);
+          const data = await res.json();
+
+          if (data.success) {
+            const listContainer = document.getElementById("modalItemList");
+            document.getElementById(
+              "modalOrderId"
+            ).innerText = `주문번호: ${orderId}`;
+            listContainer.innerHTML = "";
+
+            const isDelivered =
+              status === "배송 완료" || status === "DELIVERED";
+
+            const orderDate = new Date(dateStr.replace(/\./g, "-"));
+            const now = new Date();
+            const diffTime = Math.abs(now - orderDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const canReturn = isDelivered && diffDays <= 7;
+
+            data.items.forEach((item) => {
+              const img = item.image
+                ? `<img src="${item.image}" class="w-full h-full object-contain">`
+                : `<span class="text-xs text-slate-300">No Image</span>`;
+
+              let buttonsHtml = "";
+              if (isDelivered) {
+                // [수정] 다시 담기 버튼은 항상 표시
+                buttonsHtml = `
+                    <div class="mt-3 flex gap-2 justify-end pt-3 border-t border-dashed border-slate-100 w-full">
+                        <button onclick="addToCart('${item.code}')" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+                            다시 담기
+                        </button>
+                `;
+
+                // [수정] 리뷰가 없을 때만 리뷰 쓰기 버튼 표시
+                if (!item.hasReview) {
+                  buttonsHtml += `
+                        <button onclick="location.href='/mypage/reviews/write?product=${item.code}&order=${orderId}'" class="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-600 text-xs font-bold hover:bg-purple-100 transition">
+                            리뷰 쓰기
+                        </button>
+                    `;
+                }
+
+                buttonsHtml += `</div>`;
+              } else {
+                buttonsHtml = `
+                    <div class="mt-3 flex gap-2 justify-end pt-3 border-t border-dashed border-slate-100 w-full">
+                        <button onclick="addToCart('${item.code}')" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+                            다시 담기
+                        </button>
+                    </div>
+                  `;
+              }
+
+              const html = `
+                  <div class="p-5 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition flex flex-col">
+                      <div class="flex items-center gap-4">
+                          <div class="w-16 h-16 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                              ${img}
+                          </div>
+                          <div class="flex-1 min-w-0">
+                              <p class="text-sm font-bold text-slate-800 truncate">${
+                                item.name
+                              }</p>
+                              <p class="text-xs text-slate-400 mt-1 font-mono">${
+                                item.code
+                              }</p>
+                          </div>
+                          <div class="text-right">
+                              <p class="text-sm font-bold text-slate-900">${item.price.toLocaleString()}원</p>
+                              <p class="text-xs text-slate-500 mt-0.5">${
+                                item.qty
+                              }개</p>
+                          </div>
+                      </div>
+                      ${buttonsHtml}
+                  </div>
+              `;
+              listContainer.insertAdjacentHTML("beforeend", html);
+            });
+
+            const modalFooter = document.getElementById("modalFooter");
+            let footerBtns = "";
+
+            // 반품/교환 신청만 남김
+            if (canReturn) {
+              footerBtns += `<button onclick="location.href='/mypage/orders/claim/${orderId}'" class="mr-auto px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition text-sm">반품/교환 신청</button>`;
+            }
+
+            footerBtns += `<button onclick="closeOrderModal()" class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition text-sm ml-auto">닫기</button>`;
+
+            modalFooter.innerHTML = footerBtns;
+
+            const modal = document.getElementById("orderModal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            document.body.classList.add("modal-active");
+          } else {
+            alert(data.message || "정보를 불러올 수 없습니다.");
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+
+      function closeOrderModal() {
+        const modal = document.getElementById("orderModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        document.body.classList.remove("modal-active");
+      }
+    </script>
+  </body>
+</html>

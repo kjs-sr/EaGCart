@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 쿠폰 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen relative">
+        <!-- 타이틀 & 등록 버튼 -->
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">쿠폰 관리</h2>
+          <button
+            onclick="openCouponModal()"
+            class="inline-flex items-center gap-2 rounded-lg bg-purple-600 text-white px-5 py-2.5 text-sm font-bold hover:bg-purple-700 transition shadow-sm"
+          >
+            <span>+</span> 쿠폰 생성
+          </button>
+        </div>
+
+        <!-- 검색 및 필터 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center gap-6">
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="font-bold text-gray-800">상태</span>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-purple-600"
+                  ><input
+                    type="radio"
+                    name="status"
+                    value="all"
+                    checked
+                    onchange="filterCoupon()"
+                    class="accent-purple-600"
+                  />
+                  전체</label
+                >
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-emerald-600"
+                  ><input
+                    type="radio"
+                    name="status"
+                    value="진행중"
+                    onchange="filterCoupon()"
+                    class="accent-emerald-500"
+                  />
+                  진행중</label
+                >
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-amber-600"
+                  ><input
+                    type="radio"
+                    name="status"
+                    value="예정"
+                    onchange="filterCoupon()"
+                    class="accent-amber-500"
+                  />
+                  예정</label
+                >
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-gray-600"
+                  ><input
+                    type="radio"
+                    name="status"
+                    value="종료"
+                    onchange="filterCoupon()"
+                    class="accent-gray-500"
+                  />
+                  종료</label
+                >
+              </div>
+            </div>
+            <div class="relative w-full md:w-1/2 lg:w-1/3">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="쿠폰명, 코드 검색"
+                class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:border-purple-500 outline-none text-sm"
+                onkeyup="filterCoupon()"
+              />
+              <button
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                onclick="filterCoupon()"
+              >
+                🔍
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 쿠폰 목록 테이블 -->
+        <section
+          class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-center">
+              <thead
+                class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 whitespace-nowrap"
+              >
+                <tr>
+                  <th class="py-3 px-4 w-32">쿠폰코드</th>
+                  <th class="py-3 px-4 text-left">쿠폰명</th>
+                  <th class="py-3 px-4 w-24">유형</th>
+                  <th class="py-3 px-4 w-28 text-rose-600">할인값</th>
+                  <th class="py-3 px-4 w-32">최대할인</th>
+                  <th class="py-3 px-4 w-48">유효기간</th>
+                  <th class="py-3 px-4 w-24">상태</th>
+                  <th class="py-3 px-4 w-20">관리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-600">
+                <% if (admin.couponTable && admin.couponTable.length > 0) { %>
+                <% admin.couponTable.forEach((coupon) => { %>
+                <tr
+                  class="coupon-row hover:bg-gray-50 transition"
+                  data-code="<%= coupon.code %>"
+                  data-name="<%= coupon.name %>"
+                  data-status="<%= coupon.status %>"
+                >
+                  <td class="py-3 px-4 font-mono text-xs text-gray-500">
+                    <%= coupon.code %>
+                  </td>
+                  <td class="py-3 px-4 text-left font-medium text-gray-800">
+                    <%= coupon.name %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <% if(coupon.type === 'RATE') { %>
+                    <span
+                      class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs"
+                      >정률(%)</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs"
+                      >정액(₩)</span
+                    >
+                    <% } %>
+                  </td>
+                  <td class="py-3 px-4 font-bold text-rose-600">
+                    <%= coupon.value %>
+                  </td>
+                  <td class="py-3 px-4 text-xs text-gray-500">
+                    <%= coupon.limit %>
+                  </td>
+                  <td class="py-3 px-4 text-xs text-gray-500 font-mono">
+                    <%= coupon.startDate %> ~ <%= coupon.endDate %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <% if (coupon.status === '진행중') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      >진행중</span
+                    >
+                    <% } else if (coupon.status === '종료') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200"
+                      >종료</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"
+                      ><%= coupon.status %></span
+                    >
+                    <% } %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <!-- [수정됨] 회원 관리 페이지와 동일한 버튼 스타일 (whitespace-nowrap 적용) -->
+                    <button
+                      onclick="openEditModal('<%= coupon.code %>')"
+                      class="inline-block px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition shadow-sm whitespace-nowrap"
+                    >
+                      관리
+                    </button>
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr id="noDataRow">
+                  <td colspan="8" class="py-12 text-center text-gray-400">
+                    등록된 쿠폰이 없습니다.
+                  </td>
+                </tr>
+                <% } %>
+                <tr id="noSearchResult" class="hidden">
+                  <td colspan="8" class="py-12 text-center text-gray-400">
+                    검색 결과가 없습니다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- [쿠폰 생성 모달] -->
+    <div
+      id="couponModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeCouponModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-lg z-50 p-6 text-left"
+      >
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+          <h3 class="text-2xl font-bold text-gray-800" id="modalTitle">
+            쿠폰 생성
+          </h3>
+          <button
+            class="text-gray-500 hover:text-gray-800"
+            onclick="closeCouponModal()"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form id="couponForm" class="space-y-4">
+          <input type="hidden" id="formMode" value="create" />
+          <input type="hidden" id="targetCode" />
+
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-1"
+              >쿠폰명</label
+            >
+            <input
+              type="text"
+              id="couponName"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+              placeholder="예: 신규가입 환영 쿠폰"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-gray-700 mb-1"
+              >설명</label
+            >
+            <textarea
+              id="couponDesc"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm resize-none"
+              rows="2"
+              placeholder="쿠폰 설명 (선택)"
+            ></textarea>
+          </div>
+
+          <!-- 할인 타입 선택 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-1"
+                >할인 유형</label
+              >
+              <select
+                id="couponType"
+                class="w-full p-3 border border-gray-300 rounded-lg outline-none text-sm"
+                onchange="toggleTypeUI()"
+              >
+                <option value="RATE">정률 할인 (%)</option>
+                <option value="AMOUNT">정액 할인 (원)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-1"
+                >할인값</label
+              >
+              <div class="relative">
+                <input
+                  type="number"
+                  id="couponValue"
+                  class="w-full p-3 border border-gray-300 rounded-lg outline-none text-sm font-bold text-right pr-8"
+                  required
+                />
+                <span
+                  id="valueUnit"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-bold"
+                  >%</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- 최대 할인 금액 (정률일 때만 활성) -->
+          <div id="maxDiscountRow">
+            <label class="block text-sm font-bold text-gray-700 mb-1"
+              >최대 할인 금액</label
+            >
+            <div class="relative">
+              <input
+                type="number"
+                id="maxDiscount"
+                class="w-full p-3 border border-gray-300 rounded-lg outline-none text-sm font-bold text-right pr-8"
+                placeholder="제한 없음"
+              />
+              <span
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-bold"
+                >원</span
+              >
+            </div>
+            <p class="text-xs text-gray-400 mt-1">
+              * 0 또는 빈칸 입력 시 제한 없음
+            </p>
+          </div>
+
+          <!-- 기간 -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-1"
+                >시작일</label
+              >
+              <input
+                type="date"
+                id="startDate"
+                class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-1"
+                >종료일</label
+              >
+              <input
+                type="date"
+                id="endDate"
+                class="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- 상태 (수정 모드일 때만 표시) -->
+          <div id="statusRow" class="hidden">
+            <label class="block text-sm font-bold text-gray-700 mb-1"
+              >상태</label
+            >
+            <select
+              id="couponStatus"
+              class="w-full p-3 border border-gray-300 rounded-lg outline-none text-sm"
+            >
+              <option value="ACTIVE">ACTIVE (활성)</option>
+              <option value="INACTIVE">INACTIVE (비활성)</option>
+              <option value="EXPIRED">EXPIRED (만료)</option>
+            </select>
+          </div>
+
+          <div class="flex justify-end pt-4 gap-2">
+            <button
+              type="button"
+              class="px-5 py-2.5 bg-gray-100 rounded-lg font-bold text-gray-600 hover:bg-gray-200"
+              onclick="closeCouponModal()"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              class="px-6 py-2.5 bg-purple-600 rounded-lg font-bold text-white hover:bg-purple-700"
+            >
+              저장하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function filterCoupon() {
+        const searchInput = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const statusFilter = document.querySelector(
+          'input[name="status"]:checked'
+        ).value;
+        const rows = document.querySelectorAll(".coupon-row");
+        let hasVisible = false;
+
+        rows.forEach((row) => {
+          const code = row.dataset.code.toLowerCase();
+          const name = row.dataset.name.toLowerCase();
+          const status = row.dataset.status;
+
+          const isSearchMatch =
+            code.includes(searchInput) || name.includes(searchInput);
+          const isStatusMatch =
+            statusFilter === "all" || status === statusFilter;
+
+          if (isSearchMatch && isStatusMatch) {
+            row.classList.remove("hidden");
+            hasVisible = true;
+          } else {
+            row.classList.add("hidden");
+          }
+        });
+
+        document
+          .getElementById("noSearchResult")
+          .classList.toggle("hidden", hasVisible);
+      }
+
+      function toggleTypeUI() {
+        const type = document.getElementById("couponType").value;
+        const unit = document.getElementById("valueUnit");
+        const maxRow = document.getElementById("maxDiscountRow");
+
+        if (type === "RATE") {
+          unit.innerText = "%";
+          maxRow.classList.remove("hidden");
+          document.getElementById("couponValue").max = 99;
+        } else {
+          unit.innerText = "원";
+          maxRow.classList.add("hidden");
+          document.getElementById("couponValue").removeAttribute("max");
+        }
+      }
+
+      function openCouponModal() {
+        document.getElementById("formMode").value = "create";
+        document.getElementById("modalTitle").innerText = "쿠폰 생성";
+        document.getElementById("couponForm").reset();
+        document.getElementById("statusRow").classList.add("hidden");
+
+        // 날짜 기본값
+        const today = new Date().toISOString().split("T")[0];
+        document.getElementById("startDate").value = today;
+        document.getElementById("endDate").value = today;
+
+        toggleTypeUI();
+        document.getElementById("couponModal").classList.remove("hidden");
+        document.getElementById("couponModal").classList.add("flex");
+        document.body.classList.add("modal-active");
+      }
+
+      async function openEditModal(code) {
+        try {
+          const res = await fetch(`/admin/coupon/detail/${code}`);
+          const data = await res.json();
+          if (!data.success) return alert(data.message);
+
+          const c = data.coupon;
+          document.getElementById("formMode").value = "update";
+          document.getElementById("targetCode").value = c.COUPON_CODE;
+          document.getElementById("modalTitle").innerText = "쿠폰 수정";
+
+          document.getElementById("couponName").value = c.COUPON_NAME;
+          document.getElementById("couponDesc").value =
+            c.COUPON_DESCRIPTION || "";
+
+          if (c.DISCOUNT_RATE) {
+            document.getElementById("couponType").value = "RATE";
+            document.getElementById("couponValue").value = c.DISCOUNT_RATE;
+            document.getElementById("maxDiscount").value =
+              c.MAX_DISCOUNT_AMOUNT;
+          } else {
+            document.getElementById("couponType").value = "AMOUNT";
+            document.getElementById("couponValue").value = c.DISCOUNT_AMOUNT;
+          }
+          toggleTypeUI();
+
+          document.getElementById("startDate").value = c.START_DATE;
+          document.getElementById("endDate").value = c.END_DATE;
+
+          // 상태 표시
+          const statusSelect = document.getElementById("couponStatus");
+          statusSelect.value = c.STATUS;
+          document.getElementById("statusRow").classList.remove("hidden");
+
+          document.getElementById("couponModal").classList.remove("hidden");
+          document.getElementById("couponModal").classList.add("flex");
+          document.body.classList.add("modal-active");
+        } catch (e) {
+          console.error(e);
+          alert("정보를 불러오지 못했습니다.");
+        }
+      }
+
+      function closeCouponModal() {
+        document.getElementById("couponModal").classList.add("hidden");
+        document.getElementById("couponModal").classList.remove("flex");
+        document.body.classList.remove("modal-active");
+      }
+
+      document
+        .getElementById("couponForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const mode = document.getElementById("formMode").value;
+          const url =
+            mode === "create" ? "/admin/coupon/new" : "/admin/coupon/update";
+
+          const payload = {
+            code: document.getElementById("targetCode").value,
+            name: document.getElementById("couponName").value,
+            description: document.getElementById("couponDesc").value,
+            type: document.getElementById("couponType").value,
+            value: document.getElementById("couponValue").value,
+            maxDiscount: document.getElementById("maxDiscount").value,
+            startDate: document.getElementById("startDate").value,
+            endDate: document.getElementById("endDate").value,
+            status: document.getElementById("couponStatus").value,
+          };
+
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert(data.message);
+              location.reload();
+            } else {
+              alert("처리 실패: " + data.message);
+            }
+          } catch (err) {
+            alert("서버 통신 오류");
+          }
+        });
+    </script>
+  </body>
+</html>

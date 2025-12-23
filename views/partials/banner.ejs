@@ -1,0 +1,61 @@
+<!-- 메인 배너 컴포넌트 -->
+<div class="relative w-full h-[26rem] overflow-hidden group">
+  <div id="main-banner-slider" class="flex w-full h-full">
+    <% if (typeof banners !== 'undefined' && banners && banners.length > 0) { %>
+    <% banners.forEach(function(banner) { %> <% var href = banner.linkContent;
+    var target = '_self'; if (banner.linkType === 'PRODUCT' && href &&
+    !href.startsWith('/')) { href = '/product/detail?id=' + href; } if
+    (banner.linkType === 'URL' && href && href.startsWith('http')) { target =
+    '_blank'; } %>
+
+    <a
+      href="<%= href %>"
+      target="<%= target %>"
+      class="w-full flex-shrink-0 h-full block relative"
+    >
+      <img
+        src="<%= banner.imagePath %>"
+        alt="메인 배너"
+        class="w-full h-full object-cover"
+      />
+    </a>
+    <% }); %> <% } else { %>
+    <!-- 배너가 없을 때 -->
+    <div
+      class="w-full flex-shrink-0 h-full bg-gray-200 flex items-center justify-center"
+    >
+      <span class="text-gray-400">등록된 배너가 없습니다.</span>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var slider = document.getElementById("main-banner-slider");
+    if (!slider) return;
+
+    var slides = slider.children;
+    var totalSlides = slides.length;
+
+    if (totalSlides <= 1) return;
+
+    var currentIndex = 0;
+    var intervalTime = 3000;
+    var slideInterval;
+
+    function goToSlide(index) {
+      if (index >= totalSlides) index = 0;
+      currentIndex = index;
+      slider.style.transform = "translateX(-" + currentIndex * 100 + "%)";
+    }
+
+    function startAutoSlide() {
+      slideInterval = setInterval(function () {
+        goToSlide(currentIndex + 1);
+      }, intervalTime);
+    }
+
+    startAutoSlide();
+  });
+</script>

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 재고 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+      /* 스크롤바 스타일 */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen">
+        <!-- 1. 페이지 타이틀 -->
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">재고 관리</h2>
+          <button
+            onclick="openHistoryModal()"
+            class="text-sm text-gray-500 hover:text-purple-600 font-bold transition flex items-center gap-1"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            입고 내역 전체보기
+          </button>
+        </div>
+
+        <!-- 2. 재고 알람 섹션 (안전 재고 미만) -->
+        <% if (admin.alerts && admin.alerts.length > 0) { %>
+        <section
+          class="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-rose-500 mb-6 transition hover:shadow-lg"
+        >
+          <div
+            class="p-5 border-b border-gray-100 flex justify-between items-center bg-rose-50/30"
+          >
+            <h3 class="text-lg font-bold text-rose-600 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              재고 위험 알림 (<%= admin.alerts.length %>건)
+            </h3>
+            <span
+              class="text-xs font-bold text-rose-500 bg-white border border-rose-200 px-3 py-1 rounded-full shadow-sm"
+            >
+              현재 재고가 안전 재고(적정량의 60%)보다 부족합니다. 클릭하여 입고
+              등록하세요.
+            </span>
+          </div>
+
+          <div
+            class="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar"
+          >
+            <table class="min-w-full text-sm text-center">
+              <thead
+                class="bg-white text-gray-500 font-bold sticky top-0 shadow-sm z-10"
+              >
+                <tr>
+                  <th class="py-3 px-4">상품코드</th>
+                  <th class="py-3 px-4 text-left">상품명</th>
+                  <th class="py-3 px-4">현재재고</th>
+                  <th class="py-3 px-4 text-rose-500">안전재고</th>
+                  <th class="py-3 px-4">적정재고</th>
+                  <th class="py-3 px-4">부족수량</th>
+                  <th class="py-3 px-4">상태</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-700 bg-white">
+                <% admin.alerts.forEach((item) => { %>
+                <!-- 클릭 시 입고 모달 열기 -->
+                <tr
+                  class="hover:bg-rose-50 transition group cursor-pointer"
+                  onclick="openInboundModal('<%= item.code %>', '<%= item.name %>', <%= item.current %>, <%= item.target %>, <%= item.safety %>)"
+                >
+                  <td class="py-3 px-4 font-semibold text-gray-600">
+                    <%= item.code %>
+                  </td>
+                  <td
+                    class="py-3 px-4 text-left font-medium text-gray-800 truncate max-w-xs"
+                  >
+                    <%= item.name %>
+                  </td>
+                  <td class="py-3 px-4 font-bold text-rose-600">
+                    <%= item.current %>
+                  </td>
+                  <td class="py-3 px-4 font-bold text-rose-400">
+                    <%= item.safety %>
+                  </td>
+                  <td class="py-3 px-4 text-gray-500"><%= item.target %></td>
+                  <td class="py-3 px-4">
+                    <span
+                      class="inline-block bg-rose-100 text-rose-600 px-2 py-1 rounded font-bold text-xs"
+                    >
+                      -<%= item.shortage %>
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <% if (item.current === 0) { %>
+                    <span
+                      class="text-xs font-bold text-gray-500 border border-gray-300 px-2 py-1 rounded"
+                      >품절</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="text-xs font-bold text-rose-500 border border-rose-200 px-2 py-1 rounded bg-rose-50"
+                      >위험</span
+                    >
+                    <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <% } %>
+
+        <!-- 3. 검색 및 필터 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div
+            class="flex flex-col md:flex-row items-center justify-between gap-6"
+          >
+            <div class="relative w-full md:w-1/2 lg:w-1/3">
+              <input
+                type="text"
+                id="inventorySearch"
+                placeholder="상품 코드 또는 상품명 검색"
+                class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition text-sm"
+                onkeyup="filterInventory()"
+              />
+              <button
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600"
+                onclick="filterInventory()"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+              <label
+                class="flex items-center gap-1 cursor-pointer hover:text-purple-600 transition"
+              >
+                <input
+                  type="checkbox"
+                  id="shortageFilter"
+                  class="accent-purple-600 rounded w-4 h-4"
+                  onchange="filterInventory()"
+                />
+                <span>재고 위험 상품만 보기</span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 전체 재고 목록 -->
+        <section
+          class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-center">
+              <thead
+                class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 whitespace-nowrap"
+              >
+                <tr>
+                  <th class="py-3 px-4 w-32">상품코드</th>
+                  <th class="py-3 px-4 text-left">상품명</th>
+                  <th class="py-3 px-4 w-24">현재재고</th>
+                  <th class="py-3 px-4 w-24 text-purple-600">안전재고</th>
+                  <th class="py-3 px-4 w-24">적정재고</th>
+                  <th class="py-3 px-4 w-24">상태</th>
+                  <th class="py-3 px-4 w-48">관리</th>
+                </tr>
+              </thead>
+              <tbody
+                class="divide-y divide-gray-100 text-gray-600"
+                id="inventoryTableBody"
+              >
+                <% if (admin.inventory && admin.inventory.length > 0) { %> <%
+                admin.inventory.forEach((row) => { %> <% const current =
+                parseInt(row.current || 0); const target = parseInt(row.target
+                || 0); const safety = parseInt(row.safety || 0); let statusType
+                = 'good'; if (current === 0) { statusType = 'soldout'; } else if
+                (current < safety) { statusType = 'shortage'; } %>
+                <tr
+                  class="inventory-row hover:bg-gray-50 transition duration-150"
+                  data-code="<%= row.code %>"
+                  data-name="<%= row.name %>"
+                  data-status="<%= statusType %>"
+                >
+                  <td
+                    class="py-3 px-4 font-semibold text-gray-800 whitespace-nowrap"
+                  >
+                    <%= row.code %>
+                  </td>
+                  <td class="py-3 px-4 font-medium text-left truncate max-w-xs">
+                    <%= row.name %>
+                  </td>
+                  <td
+                    class="py-3 px-4 font-bold <%= statusType !== 'good' ? 'text-rose-600' : 'text-gray-800' %>"
+                  >
+                    <%= current %>
+                  </td>
+                  <td class="py-3 px-4 font-bold text-purple-600">
+                    <%= safety %>
+                  </td>
+                  <td class="py-3 px-4 text-gray-500"><%= target %></td>
+                  <td class="py-3 px-4">
+                    <% if (statusType === 'soldout') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200"
+                      >품절</span
+                    >
+                    <% } else if (statusType === 'shortage') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200"
+                      >위험</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-200"
+                      >양호</span
+                    >
+                    <% } %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex items-center justify-center gap-2">
+                      <button
+                        class="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition shadow-sm"
+                        onclick="openStockModal('<%= row.code %>', '<%= row.name %>', <%= current %>, <%= target %>)"
+                      >
+                        재고조정
+                      </button>
+                      <button
+                        class="px-3 py-1.5 bg-purple-600 border border-purple-600 rounded text-xs font-bold text-white hover:bg-purple-700 transition shadow-sm flex items-center gap-1"
+                        onclick="openInboundModal('<%= row.code %>', '<%= row.name %>', <%= current %>, <%= target %>, <%= safety %>)"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-3 w-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="3"
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                        입고
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr id="noDataRow">
+                  <td colspan="7" class="py-12 text-center text-gray-400">
+                    등록된 재고 정보가 없습니다.
+                  </td>
+                </tr>
+                <% } %>
+                <tr id="noSearchResult" class="hidden">
+                  <td colspan="7" class="py-12 text-center text-gray-400">
+                    검색 결과가 없습니다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- 1. 재고 조정 모달 -->
+    <div
+      id="stockModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeStockModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto relative"
+        id="modalContent"
+      >
+        <div class="modal-content py-6 px-8 text-left">
+          <div
+            class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6"
+          >
+            <p class="text-2xl font-bold text-gray-800">재고 조정</p>
+            <div
+              class="cursor-pointer z-50 p-2 hover:bg-gray-100 rounded-full"
+              onclick="closeStockModal()"
+            >
+              ✕
+            </div>
+          </div>
+          <form id="stockForm">
+            <input type="hidden" id="modalProdCode" />
+            <div class="space-y-6">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-500 mb-1 uppercase"
+                  >상품명</label
+                >
+                <p
+                  id="modalProdName"
+                  class="text-lg font-semibold text-gray-800 truncate"
+                ></p>
+                <p
+                  id="modalProdCodeDisplay"
+                  class="text-xs text-gray-400 mt-1 font-mono"
+                ></p>
+              </div>
+              <div
+                class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100"
+              >
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1"
+                    >현재 재고</label
+                  >
+                  <p
+                    id="modalCurrentStock"
+                    class="text-xl font-bold text-purple-600"
+                  ></p>
+                </div>
+                <div class="flex flex-col justify-between">
+                  <label class="block text-xs font-bold text-gray-500 mb-1"
+                    >적정 재고</label
+                  >
+                  <div class="flex items-end gap-2">
+                    <input
+                      type="number"
+                      id="modalOptimalStock"
+                      class="w-full p-1 border-b border-gray-300 focus:border-purple-500 outline-none font-bold text-gray-800 bg-transparent text-lg"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onclick="autoCalculateOptimal()"
+                      class="shrink-0 bg-white border border-purple-200 text-purple-600 text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-purple-50 transition shadow-sm"
+                    >
+                      자동계산
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2"
+                  >변경 후 재고 수량</label
+                >
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    id="modalNewStock"
+                    class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition font-bold text-gray-800"
+                    placeholder="수량"
+                  /><span class="text-gray-500 font-medium">개</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end pt-6 mt-4 gap-3">
+              <button
+                type="button"
+                class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold hover:bg-gray-200 transition"
+                onclick="closeStockModal()"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                class="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition shadow-sm"
+                onclick="updateStock()"
+              >
+                저장하기
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 입고 등록 모달 -->
+    <div
+      id="inboundModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeInboundModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto relative"
+        id="inboundModalContent"
+      >
+        <div class="modal-content py-6 px-8 text-left">
+          <div
+            class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6"
+          >
+            <p class="text-2xl font-bold text-gray-800">입고 등록</p>
+            <div
+              class="cursor-pointer z-50 p-2 hover:bg-gray-100 rounded-full"
+              onclick="closeInboundModal()"
+            >
+              ✕
+            </div>
+          </div>
+          <form id="inboundForm">
+            <input type="hidden" id="inboundProdCode" />
+            <input type="hidden" id="inboundCurrentStock" />
+            <input type="hidden" id="inboundOptimalStock" />
+
+            <div class="space-y-6">
+              <div>
+                <label
+                  class="block text-xs font-bold text-gray-500 mb-1 uppercase"
+                  >상품명</label
+                >
+                <p
+                  id="inboundProdName"
+                  class="text-lg font-semibold text-gray-800 truncate"
+                ></p>
+                <p
+                  id="inboundProdCodeDisplay"
+                  class="text-xs text-gray-400 mt-1 font-mono"
+                ></p>
+              </div>
+
+              <div
+                class="grid grid-cols-3 gap-2 bg-gray-50 p-4 rounded-lg border border-gray-100 text-center"
+              >
+                <div>
+                  <p class="text-xs text-gray-500 mb-1">현재 재고</p>
+                  <p
+                    id="inboundCurrentDisplay"
+                    class="font-bold text-gray-800 text-lg"
+                  ></p>
+                </div>
+                <div>
+                  <p class="text-xs text-purple-500 mb-1">안전 재고</p>
+                  <p
+                    id="inboundSafetyDisplay"
+                    class="font-bold text-purple-600 text-lg"
+                  ></p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-1">적정 재고</p>
+                  <p
+                    id="inboundOptimalDisplay"
+                    class="font-bold text-gray-800 text-lg"
+                  ></p>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between items-end mb-2">
+                  <label class="block text-sm font-bold text-gray-700"
+                    >입고 수량 (+)</label
+                  >
+                  <button
+                    type="button"
+                    onclick="autoFillShortage()"
+                    class="text-xs text-purple-600 font-bold hover:bg-purple-50 px-3 py-1.5 rounded transition border border-purple-200 bg-white shadow-sm"
+                  >
+                    부족분 자동 입력
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    id="inboundQuantity"
+                    class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition font-bold text-gray-800"
+                    placeholder="수량"
+                  /><span class="text-gray-500 font-medium">개</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end pt-6 mt-4 gap-3">
+              <button
+                type="button"
+                class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold hover:bg-gray-200 transition"
+                onclick="closeInboundModal()"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                class="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition shadow-sm"
+                onclick="submitInbound()"
+              >
+                입고처리
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 입고 내역 조회 모달 -->
+    <div
+      id="historyModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeHistoryModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-4xl mx-auto rounded-lg shadow-lg z-50 overflow-y-auto relative h-[90vh] flex flex-col"
+        id="historyModalContent"
+      >
+        <div
+          class="flex justify-between items-center p-6 border-b border-gray-200 shrink-0 bg-white sticky top-0 z-20"
+        >
+          <h3 class="text-2xl font-bold text-gray-800">입고 내역 조회</h3>
+          <div
+            class="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
+            onclick="closeHistoryModal()"
+          >
+            ✕
+          </div>
+        </div>
+
+        <div class="p-6 bg-gray-50 border-b border-gray-200 shrink-0">
+          <div class="flex flex-wrap gap-4 items-end">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1"
+                >기간 설정</label
+              >
+              <div class="flex items-center gap-2">
+                <input
+                  type="date"
+                  id="histStart"
+                  class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-purple-500 outline-none"
+                  onchange="loadInboundHistory()"
+                />
+                <span class="text-gray-400">~</span>
+                <input
+                  type="date"
+                  id="histEnd"
+                  class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-purple-500 outline-none"
+                  onchange="loadInboundHistory()"
+                />
+              </div>
+            </div>
+            <div class="flex-1 min-w-[200px]">
+              <label class="block text-xs font-bold text-gray-500 mb-1"
+                >검색 (상품코드, 입고코드, 상품명)</label
+              >
+              <input
+                type="text"
+                id="histSearch"
+                placeholder="검색어 입력"
+                class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:border-purple-500 outline-none"
+                onkeyup="loadInboundHistory()"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          <table class="min-w-full text-sm text-center">
+            <thead
+              class="bg-gray-100 text-gray-600 font-bold border-b border-gray-200 sticky top-0 z-10"
+            >
+              <tr>
+                <th class="py-3 px-4">입고코드</th>
+                <th class="py-3 px-4 text-left">상품코드</th>
+                <th class="py-3 px-4 text-left">상품명</th>
+                <th class="py-3 px-4">입고일시</th>
+                <th class="py-3 px-4 text-right">입고수량</th>
+              </tr>
+            </thead>
+            <tbody
+              id="historyTableBody"
+              class="divide-y divide-gray-100 text-gray-700"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function filterInventory() {
+        const searchInput = document
+          .getElementById("inventorySearch")
+          .value.toLowerCase();
+        const onlyShortage = document.getElementById("shortageFilter").checked;
+        const rows = document.querySelectorAll(".inventory-row");
+        let hasVisibleRow = false;
+
+        rows.forEach((row) => {
+          const name = row.getAttribute("data-name").toLowerCase();
+          const code = row.getAttribute("data-code").toLowerCase();
+          const status = row.getAttribute("data-status");
+          const isSearchMatch =
+            name.includes(searchInput) || code.includes(searchInput);
+          let isStatusMatch = true;
+          if (onlyShortage) {
+            if (status === "good") isStatusMatch = false;
+          }
+          if (isSearchMatch && isStatusMatch) {
+            row.classList.remove("hidden");
+            hasVisibleRow = true;
+          } else {
+            row.classList.add("hidden");
+          }
+        });
+        const noSearchRow = document.getElementById("noSearchResult");
+        const noDataRow = document.getElementById("noDataRow");
+        if (!hasVisibleRow) {
+          if (!noDataRow) noSearchRow.classList.remove("hidden");
+        } else {
+          noSearchRow.classList.add("hidden");
+        }
+      }
+
+      function openStockModal(code, name, current, target) {
+        document.getElementById("modalProdCode").value = code;
+        document.getElementById("modalProdCodeDisplay").textContent = code;
+        document.getElementById("modalProdName").textContent = name;
+        document.getElementById("modalCurrentStock").textContent = current;
+        document.getElementById("modalOptimalStock").value = target;
+        document.getElementById("modalNewStock").value = current;
+        const modal = document.getElementById("stockModal");
+        const content = document.getElementById("modalContent");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        setTimeout(() => {
+          content.classList.remove("scale-95", "opacity-0");
+          content.classList.add("scale-100", "opacity-100");
+        }, 10);
+        document.body.classList.add("modal-active");
+      }
+
+      function closeStockModal() {
+        const modal = document.getElementById("stockModal");
+        const content = document.getElementById("modalContent");
+        content.classList.remove("scale-100", "opacity-100");
+        content.classList.add("scale-95", "opacity-0");
+        setTimeout(() => {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          document.body.classList.remove("modal-active");
+        }, 200);
+      }
+
+      async function autoCalculateOptimal() {
+        const code = document.getElementById("modalProdCode").value;
+        const btn = document.querySelector(
+          'button[onclick="autoCalculateOptimal()"]'
+        );
+        const originalText = btn.innerText;
+        btn.innerText = "...";
+        btn.disabled = true;
+        try {
+          const res = await fetch("/admin/inventory/calculate-optimal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
+          const data = await res.json();
+          if (data.success)
+            document.getElementById("modalOptimalStock").value = data.optimal;
+          else alert(data.message);
+        } catch (e) {
+          alert("오류 발생");
+        } finally {
+          btn.innerText = originalText;
+          btn.disabled = false;
+        }
+      }
+
+      async function updateStock() {
+        const code = document.getElementById("modalProdCode").value;
+        const newStock = document.getElementById("modalNewStock").value;
+        const newOptimal = document.getElementById("modalOptimalStock").value;
+        if (newStock === "") return alert("수량을 입력해주세요.");
+        if (newOptimal === "") return alert("적정 재고를 입력해주세요.");
+        try {
+          const res = await fetch("/admin/inventory/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code,
+              current: newStock,
+              optimal: newOptimal,
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("수정되었습니다.");
+            location.reload();
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          alert("통신 오류");
+        }
+      }
+
+      // [수정됨] 입고 모달 열기 (safety 추가)
+      function openInboundModal(code, name, current, target, safety) {
+        document.getElementById("inboundProdCode").value = code;
+        document.getElementById("inboundProdCodeDisplay").textContent = code;
+        document.getElementById("inboundProdName").textContent = name;
+        document.getElementById("inboundCurrentStock").value = current;
+        document.getElementById("inboundOptimalStock").value = target;
+        document.getElementById("inboundCurrentDisplay").textContent = current;
+        document.getElementById("inboundOptimalDisplay").textContent = target;
+        document.getElementById("inboundSafetyDisplay").textContent = safety;
+        document.getElementById("inboundQuantity").value = "";
+        const modal = document.getElementById("inboundModal");
+        const content = document.getElementById("inboundModalContent");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        setTimeout(() => {
+          content.classList.remove("scale-95", "opacity-0");
+          content.classList.add("scale-100", "opacity-100");
+        }, 10);
+        document.body.classList.add("modal-active");
+      }
+
+      function closeInboundModal() {
+        const modal = document.getElementById("inboundModal");
+        const content = document.getElementById("inboundModalContent");
+        content.classList.remove("scale-100", "opacity-100");
+        content.classList.add("scale-95", "opacity-0");
+        setTimeout(() => {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          document.body.classList.remove("modal-active");
+        }, 200);
+      }
+
+      function autoFillShortage() {
+        const current =
+          parseInt(document.getElementById("inboundCurrentStock").value) || 0;
+        const target =
+          parseInt(document.getElementById("inboundOptimalStock").value) || 0;
+        let shortage = target - current;
+        if (shortage < 0) shortage = 0;
+        document.getElementById("inboundQuantity").value = shortage;
+      }
+
+      async function submitInbound() {
+        const code = document.getElementById("inboundProdCode").value;
+        const quantity = document.getElementById("inboundQuantity").value;
+        if (!quantity || quantity <= 0)
+          return alert("유효한 수량을 입력해주세요.");
+        try {
+          const res = await fetch("/admin/inventory/inbound", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, quantity }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+
+      // [수정됨] 입고 내역 모달 (실시간 검색)
+      function openHistoryModal() {
+        if (!document.getElementById("histEnd").value) {
+          const today = new Date();
+          const oneMonthAgo = new Date();
+          oneMonthAgo.setMonth(today.getMonth() - 1);
+          const formatDate = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          };
+          document.getElementById("histEnd").value = formatDate(today);
+          document.getElementById("histStart").value = formatDate(oneMonthAgo);
+        }
+
+        loadInboundHistory();
+        const modal = document.getElementById("historyModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        document.body.classList.add("modal-active");
+      }
+
+      function closeHistoryModal() {
+        const modal = document.getElementById("historyModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        document.body.classList.remove("modal-active");
+      }
+
+      async function loadInboundHistory() {
+        const start = document.getElementById("histStart").value;
+        const end = document.getElementById("histEnd").value;
+        const search = document.getElementById("histSearch").value;
+        const tbody = document.getElementById("historyTableBody");
+
+        // 타이핑 중 깜빡임 방지를 위해 로딩 표시 생략 또는 CSS로 처리 가능하지만, 간단히 유지
+        // tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-gray-400">로딩중...</td></tr>';
+
+        try {
+          const params = new URLSearchParams({
+            startDate: start,
+            endDate: end,
+            search,
+          });
+          const res = await fetch(`/admin/inventory/history?${params}`);
+          const data = await res.json();
+
+          if (data.success) {
+            tbody.innerHTML = "";
+            if (data.history.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="5" class="py-8 text-gray-400">내역이 없습니다.</td></tr>';
+              return;
+            }
+
+            data.history.forEach((item) => {
+              const tr = document.createElement("tr");
+              tr.className = "hover:bg-gray-50 transition";
+              // [수정됨] 컬럼 순서 변경: 입고코드, 상품코드, 상품명, 입고일시, 수량
+              tr.innerHTML = `
+                        <td class="py-3 px-4 font-mono text-xs text-gray-400">${item.code}</td>
+                        <td class="py-3 px-4 text-left font-mono text-xs text-gray-500">${item.prodCode}</td>
+                        <td class="py-3 px-4 text-left font-bold text-gray-700">${item.prodName}</td>
+                        <td class="py-3 px-4 text-gray-500 text-xs">${item.date}</td>
+                        <td class="py-3 px-4 text-right font-bold text-purple-600">+${item.qty}</td>
+                      `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            tbody.innerHTML =
+              '<tr><td colspan="5" class="py-8 text-red-400">불러오기 실패</td></tr>';
+          }
+        } catch (e) {
+          console.error(e);
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="py-8 text-red-400">오류 발생</td></tr>';
+        }
+      }
+    </script>
+  </body>
+</html>

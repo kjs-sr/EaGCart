@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지 - 개인정보 수정 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main
+      class="max-w-7xl mx-auto w-full px-6 py-12 grid gap-8 lg:grid-cols-[260px_1fr] flex-grow"
+    >
+      <%- include('./partials/nav.ejs', { activeTab }) %>
+
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+            개인정보확인 / 수정
+          </p>
+          <h1 class="text-3xl font-bold">회원 정보</h1>
+          <p class="text-sm text-slate-500 mt-2">
+            비밀번호 변경, 이메일 수정, 회원 탈퇴를 진행할 수 있습니다. (현재
+            비밀번호 필수)
+          </p>
+        </header>
+
+        <div
+          class="space-y-5 bg-white rounded-3xl border border-slate-100 p-8 shadow-sm"
+        >
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="text-xs uppercase tracking-[0.4em] text-slate-400"
+                >아이디</label
+              >
+              <input
+                type="text"
+                class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 bg-slate-50 text-slate-500"
+                value="<%= mypage.profile.userId %>"
+                disabled
+              />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-[0.4em] text-slate-400"
+                >닉네임</label
+              >
+              <div class="mt-2 flex gap-3">
+                <input
+                  type="text"
+                  id="nickname"
+                  class="w-full rounded-2xl border border-slate-200 px-4 py-3 focus:border-purple-400 focus:outline-none"
+                  value="<%= mypage.profile.nickname %>"
+                />
+                <button
+                  onclick="checkNickname()"
+                  class="shrink-0 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold hover:bg-purple-50 hover:text-purple-600 transition"
+                >
+                  중복확인
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-3">
+            <div>
+              <label
+                class="text-xs uppercase tracking-[0.4em] text-purple-600 font-bold"
+                >현재 비밀번호 (필수)</label
+              >
+              <input
+                type="password"
+                id="currentPassword"
+                class="mt-2 w-full rounded-2xl border-2 border-purple-100 px-4 py-3 focus:border-purple-500 focus:outline-none"
+                placeholder="정보 수정 시 입력"
+              />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-[0.4em] text-slate-400"
+                >새 비밀번호</label
+              >
+              <input
+                type="password"
+                id="newPassword"
+                class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 focus:border-purple-400 focus:outline-none"
+                placeholder="변경할 경우만 입력"
+              />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-[0.4em] text-slate-400"
+                >새 비밀번호 확인</label
+              >
+              <input
+                type="password"
+                id="newPasswordConfirm"
+                class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 focus:border-purple-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs uppercase tracking-[0.4em] text-slate-400"
+              >이메일</label
+            >
+            <div class="mt-2 flex gap-3 flex-wrap sm:flex-nowrap">
+              <input
+                type="email"
+                id="email"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-3 focus:border-purple-400 focus:outline-none"
+                value="<%= mypage.profile.email %>"
+              />
+              <button
+                id="btn-send"
+                onclick="sendAuthCode()"
+                class="shrink-0 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold hover:bg-slate-50 transition"
+              >
+                인증번호 전송
+              </button>
+
+              <!-- 인증번호 입력란 (평소엔 숨김) -->
+              <div id="auth-box" class="hidden flex gap-2 w-full sm:w-auto">
+                <input
+                  type="text"
+                  id="authCode"
+                  placeholder="코드입력"
+                  class="w-24 rounded-2xl border border-slate-200 px-3 py-3 text-center focus:border-purple-400 outline-none"
+                />
+                <button
+                  onclick="verifyAuthCode()"
+                  class="shrink-0 rounded-2xl bg-purple-100 text-purple-700 px-4 py-3 text-sm font-bold hover:bg-purple-200 transition"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="pt-4 flex flex-wrap gap-3 text-sm font-semibold border-t border-slate-100 mt-6"
+          >
+            <button
+              onclick="updateInfo()"
+              class="rounded-2xl bg-slate-900 text-white px-8 py-3 hover:bg-purple-700 transition shadow-md"
+            >
+              수정사항 저장
+            </button>
+            <button
+              onclick="withdrawUser()"
+              class="rounded-2xl border border-slate-200 px-6 py-3 text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition"
+            >
+              회원 탈퇴
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      let isNicknameChecked = true; // 기존 닉네임은 체크된 상태로 간주
+      let isEmailVerified = true; // 기존 이메일은 인증된 상태
+      const originalNickname = "<%= mypage.profile.nickname %>";
+      const originalEmail = "<%= mypage.profile.email %>";
+
+      // 닉네임 변경 감지
+      document
+        .getElementById("nickname")
+        .addEventListener("input", function () {
+          if (this.value !== originalNickname) isNicknameChecked = false;
+          else isNicknameChecked = true;
+        });
+
+      // 이메일 변경 감지
+      document.getElementById("email").addEventListener("input", function () {
+        if (this.value !== originalEmail) {
+          isEmailVerified = false;
+          document.getElementById("btn-send").innerText = "인증번호 전송";
+          document.getElementById("btn-send").disabled = false;
+        } else {
+          isEmailVerified = true;
+          document.getElementById("auth-box").classList.add("hidden");
+        }
+      });
+
+      // 1. 닉네임 중복 확인
+      async function checkNickname() {
+        const nickname = document.getElementById("nickname").value;
+        if (!nickname) return alert("닉네임을 입력해주세요.");
+        if (nickname === originalNickname)
+          return alert("현재 사용중인 닉네임입니다.");
+
+        try {
+          const res = await fetch("/auth/check-duplicate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "nickname", value: nickname }),
+          });
+          const data = await res.json();
+          if (data.exists) {
+            alert("이미 사용중인 닉네임입니다.");
+            isNicknameChecked = false;
+          } else {
+            alert("사용 가능한 닉네임입니다.");
+            isNicknameChecked = true;
+          }
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+
+      // 2. 이메일 인증번호 전송
+      async function sendAuthCode() {
+        const email = document.getElementById("email").value;
+        if (!email) return alert("이메일을 입력해주세요.");
+        if (email === originalEmail) return alert("기존 이메일과 동일합니다.");
+
+        const btn = document.getElementById("btn-send");
+        btn.innerText = "전송중...";
+        btn.disabled = true;
+
+        try {
+          // 중복 체크
+          const check = await fetch("/auth/check-duplicate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "email", value: email }),
+          });
+          const checkData = await check.json();
+          if (checkData.exists) {
+            btn.innerText = "인증번호 전송";
+            btn.disabled = false;
+            return alert("이미 가입된 이메일입니다.");
+          }
+
+          const res = await fetch("/auth/send-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, type: "change" }),
+          });
+          const data = await res.json();
+          alert(data.message);
+
+          btn.innerText = "재전송";
+          btn.disabled = false;
+          document.getElementById("auth-box").classList.remove("hidden"); // 입력창 보이기
+        } catch (e) {
+          alert("전송 실패");
+          btn.innerText = "인증번호 전송";
+          btn.disabled = false;
+        }
+      }
+
+      // 3. 인증번호 확인
+      async function verifyAuthCode() {
+        const code = document.getElementById("authCode").value;
+        if (!code) return alert("코드를 입력하세요.");
+
+        try {
+          const res = await fetch("/auth/verify-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("인증되었습니다.");
+            isEmailVerified = true;
+            document.getElementById("auth-box").classList.add("hidden");
+            document.getElementById("btn-send").innerText = "인증완료";
+            document.getElementById("btn-send").disabled = true;
+            document.getElementById("email").readOnly = true;
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          alert("확인 실패");
+        }
+      }
+
+      // 4. 정보 수정 요청
+      async function updateInfo() {
+        const nickname = document.getElementById("nickname").value;
+        const currentPassword =
+          document.getElementById("currentPassword").value;
+        const newPassword = document.getElementById("newPassword").value;
+        const newPasswordConfirm =
+          document.getElementById("newPasswordConfirm").value;
+        const email = document.getElementById("email").value;
+
+        if (!currentPassword)
+          return alert("정보를 수정하려면 현재 비밀번호를 입력해야 합니다.");
+        if (!isNicknameChecked) return alert("닉네임 중복확인을 해주세요.");
+        if (!isEmailVerified) return alert("이메일 인증을 완료해주세요.");
+
+        if (newPassword) {
+          const PW_REGEX = /^[a-zA-Z0-9!@#$%^&*]{8,20}$/;
+          if (!PW_REGEX.test(newPassword))
+            return alert(
+              "새 비밀번호는 8~20자, 특수문자(!@#$%^&*)를 포함해야 합니다."
+            );
+          if (newPassword !== newPasswordConfirm)
+            return alert("새 비밀번호가 일치하지 않습니다.");
+        }
+
+        try {
+          const res = await fetch("/mypage/profile/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              nickname,
+              currentPassword,
+              newPassword,
+              email,
+            }),
+          });
+          const data = await res.json();
+          alert(data.message);
+          if (data.success) location.reload();
+        } catch (e) {
+          alert("수정 중 오류 발생");
+        }
+      }
+
+      // 5. 회원 탈퇴
+      async function withdrawUser() {
+        const currentPassword =
+          document.getElementById("currentPassword").value;
+        if (!currentPassword)
+          return alert("탈퇴하려면 현재 비밀번호를 입력해주세요.");
+
+        if (
+          !confirm(
+            "정말로 탈퇴하시겠습니까? 탈퇴 시 계정 복구는 불가능할 수 있습니다."
+          )
+        )
+          return;
+
+        try {
+          const res = await fetch("/mypage/profile/withdraw", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ currentPassword }),
+          });
+          const data = await res.json();
+          alert(data.message);
+          if (data.success) location.href = "/";
+        } catch (e) {
+          alert("탈퇴 처리 중 오류 발생");
+        }
+      }
+    </script>
+  </body>
+</html>

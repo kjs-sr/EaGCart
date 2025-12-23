@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 배송 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal { transition: opacity 0.25s ease; }
+      body.modal-active { overflow: hidden; }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen relative">
+        
+        <!-- 타이틀 -->
+        <div class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300">
+          <h2 class="text-3xl font-bold text-gray-800">배송 관리</h2>
+        </div>
+
+        <!-- 검색 및 필터 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center gap-6">
+              <!-- 기간 -->
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="font-bold text-gray-800">기간</span>
+                <input type="date" id="searchStartDate" class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition" value="2025-01-01" onchange="filterDelivery()" />
+                <span>~</span>
+                <input type="date" id="searchEndDate" class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition" value="2025-12-31" onchange="filterDelivery()" />
+              </div>
+
+              <!-- 상태 필터 -->
+              <div class="flex items-center gap-4 text-sm">
+                <span class="font-bold text-gray-800">배송상태</span>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-purple-600 transition">
+                    <input type="radio" name="status" value="all" checked class="accent-purple-600" onchange="filterDelivery()" /> 전체
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-purple-600 transition">
+                    <input type="radio" name="status" value="PAYMENT_COMPLETED" class="accent-purple-500" onchange="filterDelivery()" /> 결제완료
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-amber-600 transition">
+                    <input type="radio" name="status" value="SHIPPING" class="accent-amber-500" onchange="filterDelivery()" /> 배송중
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer hover:text-emerald-600 transition">
+                    <input type="radio" name="status" value="DELIVERED" class="accent-emerald-500" onchange="filterDelivery()" /> 배송완료
+                </label>
+              </div>
+            </div>
+
+            <!-- 검색창 -->
+            <div class="relative w-full md:w-1/2 lg:w-1/3">
+              <input type="text" id="searchInput" placeholder="주문번호, 수령인, 주문자ID 검색" class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition text-sm" onkeyup="filterDelivery()" />
+              <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600" onclick="filterDelivery()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 배송 목록 테이블 -->
+        <section class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-center">
+              <thead class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 whitespace-nowrap">
+                <tr>
+                  <th class="py-3 px-4 w-32">주문번호</th>
+                  <th class="py-3 px-4 w-32">수령인(주문자)</th>
+                  <th class="py-3 px-4 text-left">주문 상품</th>
+                  <th class="py-3 px-4 w-32">주문일자</th>
+                  <th class="py-3 px-4 w-32">배송예정일/완료일</th>
+                  <th class="py-3 px-4 w-32">상태</th>
+                  <th class="py-3 px-4 w-20">관리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-600">
+                <% if (admin.deliveries && admin.deliveries.length > 0) { %>
+                  <% admin.deliveries.forEach((delivery) => { 
+                      let onlyId = delivery.orderer;
+                      if (delivery.orderer && delivery.orderer.includes('(')) {
+                        let parts = delivery.orderer.split('(');
+                        onlyId = parts[parts.length - 1].replace(')', ''); 
+                      }
+                  %>
+                  <tr class="delivery-row hover:bg-gray-50 transition duration-150"
+                      data-code="<%= delivery.code %>"
+                      data-receiver="<%= delivery.receiver %>"
+                      data-orderer="<%= onlyId %>"
+                      data-status="<%= delivery.status %>"
+                      data-date="<%= delivery.date %>"
+                  >
+                    <td class="py-3 px-4 font-mono text-xs text-gray-500"><%= delivery.code %></td>
+                    <td class="py-3 px-4 font-medium text-gray-800">
+                      <%= delivery.receiver %>
+                      <br><span class="text-xs text-gray-400 font-normal">(<%= onlyId %>)</span>
+                    </td>
+                    <td class="py-3 px-4 text-left text-gray-600 truncate max-w-xs" title="<%= delivery.summary %>">
+                      <%= delivery.summary %>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-gray-400 whitespace-nowrap"><%= delivery.date %></td>
+                    <td class="py-3 px-4 text-xs whitespace-nowrap">
+                        <% if(delivery.status === 'DELIVERED') { %>
+                            <span class="text-emerald-600 font-bold"><%= delivery.eta %></span>
+                        <% } else { %>
+                            <span class="text-gray-400"><%= delivery.eta %></span>
+                        <% } %>
+                    </td>
+                    <td class="py-3 px-4">
+                      <% if (delivery.status === 'DELIVERED') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">배송완료</span>
+                      <% } else if (delivery.status === 'SHIPPING') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">배송중</span>
+                      <% } else if (delivery.status === 'CANCELLED') { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">취소</span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">결제완료</span>
+                      <% } %>
+                    </td>
+                    <td class="py-3 px-4">
+                      <button 
+                        onclick="openDeliveryModal(this)" 
+                        data-code="<%= delivery.code %>"
+                        data-status="<%= delivery.status %>"
+                        data-receiver="<%= delivery.receiver %>"
+                        data-address="<%= delivery.address %>"
+                        data-phone="<%= delivery.phone %>"
+                        data-request="<%= delivery.request %>"
+                        data-eta="<%= delivery.eta %>"
+                        class="inline-block px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition shadow-sm whitespace-nowrap">
+                        관리
+                      </button>
+                    </td>
+                  </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr id="noDataRow"><td colspan="7" class="py-12 text-center text-gray-400">배송 내역이 없습니다.</td></tr>
+                <% } %>
+                <tr id="noSearchResult" class="hidden"><td colspan="7" class="py-12 text-center text-gray-400">검색 결과가 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- [배송 상세 관리 모달] -->
+    <div id="deliveryModal" class="modal fixed inset-0 hidden items-center justify-center z-50">
+      <div class="modal-overlay absolute inset-0 bg-gray-900 opacity-50" onclick="closeDeliveryModal()"></div>
+      <div class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-lg z-50 p-6 text-left max-h-[95vh] flex flex-col">
+        
+        <div class="flex justify-between items-center mb-4 border-b pb-4 shrink-0">
+          <h3 class="text-2xl font-bold text-gray-800">배송 상세 관리</h3>
+          <button class="text-gray-500 hover:text-gray-800" onclick="closeDeliveryModal()">✕</button>
+        </div>
+
+        <div class="overflow-y-auto custom-scrollbar pr-2 flex-1">
+          <form id="deliveryForm" class="space-y-6">
+            <input type="hidden" id="modalOrderCode">
+            
+            <!-- 1. 주문 기본 정보 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">주문번호</span>
+                <span class="text-sm font-mono font-bold text-gray-800" id="displayOrderCode"></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">수령인</span>
+                <span class="text-sm font-bold text-gray-800" id="displayReceiver"></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">연락처</span>
+                <span class="text-sm font-bold text-gray-800" id="displayPhone"></span>
+              </div>
+
+              <!-- [수정] 배송일자 수정 (배송완료 시 완료일이 됨) -->
+              <div class="flex justify-between items-center bg-white p-2 rounded border border-gray-200">
+                <span class="text-xs text-gray-500">배송예정(완료)일</span>
+                <input type="date" id="modalEta" required class="text-sm font-bold text-gray-800 border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none">
+              </div>
+
+              <div>
+                <span class="text-xs text-gray-500 block mb-1">배송지</span>
+                <p class="text-xs text-gray-700 leading-relaxed bg-white p-2 rounded border border-gray-100" id="displayAddress"></p>
+              </div>
+
+              <div>
+                <span class="text-xs text-gray-500 block mb-1">배송 요청사항</span>
+                <p class="text-xs text-gray-700 leading-relaxed bg-white p-2 rounded border border-gray-100" id="displayRequest"></p>
+              </div>
+            </div>
+
+            <!-- 2. 배송 상품 목록 -->
+            <div>
+                <h4 class="text-sm font-bold text-gray-700 mb-2">배송 상품 목록</h4>
+                <div id="modalItemList" class="space-y-2 max-h-48 overflow-y-auto border border-gray-100 rounded-lg p-2">
+                    <!-- JS로 동적 추가 -->
+                </div>
+            </div>
+
+            <!-- 3. 상태 변경 (라디오 버튼) -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-3">배송 상태 변경</label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="cursor-pointer group">
+                  <input type="radio" name="modalStatus" value="PAYMENT_COMPLETED" class="peer hidden" />
+                  <div class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-purple-50 peer-checked:text-purple-700 peer-checked:border-purple-200 peer-checked:ring-1 peer-checked:ring-purple-200 transition font-bold group-hover:bg-gray-50 text-sm">
+                    결제완료 (준비)
+                  </div>
+                </label>
+                <label class="cursor-pointer group">
+                  <input type="radio" name="modalStatus" value="SHIPPING" class="peer hidden" />
+                  <div class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-amber-50 peer-checked:text-amber-700 peer-checked:border-amber-200 peer-checked:ring-1 peer-checked:ring-amber-200 transition font-bold group-hover:bg-gray-50 text-sm">
+                    배송중
+                  </div>
+                </label>
+                <label class="cursor-pointer group">
+                  <input type="radio" name="modalStatus" value="DELIVERED" class="peer hidden" />
+                  <div class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:border-emerald-200 peer-checked:ring-1 peer-checked:ring-emerald-200 transition font-bold group-hover:bg-gray-50 text-sm">
+                    배송완료
+                  </div>
+                </label>
+                <label class="cursor-pointer group">
+                  <input type="radio" name="modalStatus" value="CANCELLED" class="peer hidden" />
+                  <div class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-gray-100 peer-checked:text-gray-700 peer-checked:border-gray-300 peer-checked:ring-1 peer-checked:ring-gray-300 transition font-bold group-hover:bg-gray-50 text-sm">
+                    주문취소
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-4 mt-2 gap-2">
+            <button type="button" class="px-5 py-2.5 bg-gray-100 rounded-lg font-bold text-gray-600 hover:bg-gray-200 transition" onclick="closeDeliveryModal()">취소</button>
+            <button type="submit" class="px-6 py-2.5 bg-purple-600 rounded-lg font-bold text-white hover:bg-purple-700 transition shadow-sm">저장하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function filterDelivery() {
+        const searchInput = document.getElementById("searchInput").value.toLowerCase();
+        const statusFilter = document.querySelector('input[name="status"]:checked').value;
+        const searchStartDate = document.getElementById("searchStartDate").value;
+        const searchEndDate = document.getElementById("searchEndDate").value;
+        const rows = document.querySelectorAll(".delivery-row");
+        let hasVisibleRow = false;
+
+        rows.forEach(row => {
+          const code = row.getAttribute("data-code").toLowerCase();
+          const receiver = row.getAttribute("data-receiver").toLowerCase();
+          const orderer = row.getAttribute("data-orderer").toLowerCase();
+          const status = row.getAttribute("data-status");
+          const date = row.getAttribute("data-date");
+          const isSearchMatch = code.includes(searchInput) || receiver.includes(searchInput) || orderer.includes(searchInput);
+          const isStatusMatch = statusFilter === 'all' || status === statusFilter;
+          let isDateMatch = true;
+          if (searchStartDate && searchEndDate && date) {
+            if (date < searchStartDate || date > searchEndDate) isDateMatch = false;
+          }
+          if (isSearchMatch && isStatusMatch && isDateMatch) {
+            row.classList.remove('hidden');
+            hasVisibleRow = true;
+          } else {
+            row.classList.add('hidden');
+          }
+        });
+        const noSearchRow = document.getElementById("noSearchResult");
+        const noDataRow = document.getElementById("noDataRow");
+        if (!hasVisibleRow) {
+          if (!noDataRow) noSearchRow.classList.remove("hidden");
+        } else {
+          noSearchRow.classList.add("hidden");
+        }
+      }
+
+      async function openDeliveryModal(btn) {
+        const code = btn.dataset.code;
+        const status = btn.dataset.status;
+        const receiver = btn.dataset.receiver;
+        const address = btn.dataset.address;
+        const phone = btn.dataset.phone;
+        const request = btn.dataset.request;
+        const eta = btn.dataset.eta;
+
+        document.getElementById('modalOrderCode').value = code;
+        document.getElementById('displayOrderCode').textContent = code;
+        document.getElementById('displayReceiver').textContent = receiver;
+        document.getElementById('displayAddress').textContent = address;
+        document.getElementById('displayPhone').textContent = phone;
+        document.getElementById('displayRequest').textContent = request;
+        
+        if (eta && eta !== 'undefined' && eta !== '-') {
+            document.getElementById('modalEta').value = eta;
+        } else {
+            document.getElementById('modalEta').value = new Date().toISOString().split('T')[0];
+        }
+        
+        const radios = document.getElementsByName('modalStatus');
+        for (let radio of radios) {
+            radio.checked = false; 
+            if (radio.value === status) radio.checked = true;
+            
+            // [추가] 라디오 버튼 변경 이벤트: 배송완료 선택 시 날짜를 오늘로 변경
+            radio.addEventListener('change', function() {
+                if(this.value === 'DELIVERED') {
+                    // 오늘 날짜로 세팅
+                    document.getElementById('modalEta').value = new Date().toISOString().split('T')[0];
+                }
+            });
+        }
+
+        const listContainer = document.getElementById('modalItemList');
+        listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">상품 정보를 불러오는 중...</p>';
+
+        try {
+            const res = await fetch(`/admin/delivery/detail/${code}`);
+            const data = await res.json();
+            
+            if (data.success && data.items.length > 0) {
+                listContainer.innerHTML = '';
+                data.items.forEach(item => {
+                    const imgHtml = item.image ? `<img src="${item.image}" class="w-full h-full object-contain">` : `<span class="text-xs text-gray-300">Img</span>`;
+                    const itemHtml = `
+                        <div class="flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-lg">
+                            <div class="w-10 h-10 bg-gray-50 rounded overflow-hidden flex items-center justify-center flex-shrink-0 border border-gray-200">
+                                ${imgHtml}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-gray-800 truncate">${item.name}</p>
+                                <p class="text-[10px] text-gray-500">수량: ${item.qty}개</p>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.insertAdjacentHTML('beforeend', itemHtml);
+                });
+            } else {
+                listContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">상품 정보가 없습니다.</p>';
+            }
+        } catch(e) {
+            listContainer.innerHTML = '<p class="text-xs text-red-400 text-center py-2">오류가 발생했습니다.</p>';
+        }
+
+        const modal = document.getElementById('deliveryModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('modal-active');
+      }
+
+      function closeDeliveryModal() {
+        const modal = document.getElementById('deliveryModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('modal-active');
+      }
+
+      document.getElementById('deliveryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const code = document.getElementById('modalOrderCode').value;
+        const newStatus = document.querySelector('input[name="modalStatus"]:checked')?.value;
+        const newDate = document.getElementById('modalEta').value; 
+
+        if (!newStatus) return alert("변경할 상태를 선택해주세요.");
+        if (!newDate) return alert("배송일자를 선택해주세요.");
+
+        try {
+          const res = await fetch('/admin/delivery/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                code, 
+                status: newStatus,
+                date: newDate // 변경된 날짜 전송
+            })
+          });
+          const data = await res.json();
+          if(data.success) {
+            alert("배송 정보가 변경되었습니다.");
+            location.reload(); 
+          } else {
+            alert("변경 실패: " + data.message);
+          }
+        } catch(e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      });
+    </script>
+  </body>
+</html>

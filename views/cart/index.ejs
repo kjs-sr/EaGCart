@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>장바구니 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main class="flex-grow max-w-5xl mx-auto w-full px-6 py-12 space-y-6">
+      <header>
+        <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+          SHOPPING CART
+        </p>
+        <h1 class="text-3xl font-bold">장바구니</h1>
+      </header>
+
+      <section class="space-y-4">
+        <% if (cart.items && cart.items.length > 0) { %>
+        <article
+          class="rounded-3xl bg-white border border-slate-200 p-6 shadow-sm flex flex-col gap-6"
+        >
+          <!-- 전체 선택 체크박스 -->
+          <label
+            class="flex items-center gap-3 text-sm font-semibold border-b border-slate-100 pb-4"
+          >
+            <input
+              type="checkbox"
+              id="checkAll"
+              class="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-5 h-5 cursor-pointer"
+              checked
+              onchange="toggleAll(this)"
+            />
+            장바구니 상품 전체 선택
+          </label>
+
+          <!-- 상품 리스트 -->
+          <div id="cartList" class="flex flex-col gap-4">
+            <% cart.items.forEach((item) => { const finalPrice = item.salePrice
+            || item.price; %>
+            <div
+              class="cart-item rounded-2xl border border-slate-100 p-4 flex flex-wrap items-center gap-4 hover:bg-slate-50 transition"
+              id="item-<%= item.code %>"
+            >
+              <!-- 개별 체크박스 -->
+              <input
+                type="checkbox"
+                class="cart-check rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-5 h-5 cursor-pointer"
+                checked
+                data-price="<%= finalPrice %>"
+                onchange="calculateTotal()"
+              />
+
+              <!-- 상품 이미지 -->
+              <div
+                class="w-16 h-16 bg-white border border-slate-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+              >
+                <% if (item.thumbnail) { %>
+                <img
+                  src="<%= item.thumbnail %>"
+                  alt="<%= item.name %>"
+                  class="w-full h-full object-contain"
+                />
+                <% } else { %>
+                <span class="text-xs text-slate-300">No Image</span>
+                <% } %>
+              </div>
+
+              <!-- 상품 정보 -->
+              <div class="flex-1 min-w-0">
+                <p
+                  class="text-xs uppercase tracking-[0.1em] text-slate-400 mb-1 truncate"
+                >
+                  <%= item.console %>
+                </p>
+                <h3
+                  class="text-lg font-bold text-slate-800 truncate cursor-pointer hover:text-purple-600"
+                  onclick="location.href='/product/detail?id=<%= item.code %>'"
+                >
+                  <%= item.name %>
+                </h3>
+              </div>
+
+              <!-- 수량 조절 버튼 -->
+              <div class="flex items-center gap-3">
+                <button
+                  onclick="changeQty('<%= item.code %>', -1)"
+                  class="h-8 w-8 rounded-full border border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-purple-600 transition"
+                >
+                  -
+                </button>
+                <span
+                  id="qty-<%= item.code %>"
+                  class="w-8 text-center font-bold text-slate-700"
+                  ><%= item.qty %></span
+                >
+                <button
+                  onclick="changeQty('<%= item.code %>', 1)"
+                  class="h-8 w-8 rounded-full border border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-purple-600 transition"
+                >
+                  +
+                </button>
+              </div>
+
+              <!-- 가격 표시 -->
+              <div class="text-right w-24 flex-shrink-0">
+                <% if (item.salePrice) { %>
+                <p class="text-xs text-slate-400 line-through">
+                  <%= item.price.toLocaleString() %>원
+                </p>
+                <p class="text-xl font-bold text-rose-600">
+                  <%= item.salePrice.toLocaleString() %>원
+                </p>
+                <% } else { %>
+                <p class="text-xl font-bold text-slate-900">
+                  <%= item.price.toLocaleString() %>원
+                </p>
+                <% } %>
+              </div>
+
+              <!-- 삭제 버튼 -->
+              <button
+                onclick="deleteItem('<%= item.code %>')"
+                class="text-sm text-slate-400 hover:text-rose-500 underline ml-2 transition flex-shrink-0"
+              >
+                삭제
+              </button>
+            </div>
+            <% }) %>
+          </div>
+        </article>
+
+        <!-- 하단 총액 및 구매 버튼 -->
+        <div
+          class="flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-3xl border border-slate-200 shadow-sm sticky bottom-6 z-10"
+        >
+          <p class="text-sm text-slate-500">
+            장바구니 총 상품 가격:
+            <span
+              class="font-bold text-2xl text-slate-900 ml-2"
+              id="footerTotal"
+              ><%= cart.summary.total %></span
+            >원
+          </p>
+          <button
+            onclick="goToCheckout()"
+            class="rounded-xl bg-slate-900 text-white px-8 py-3 text-sm font-bold hover:bg-slate-800 transition shadow-lg"
+          >
+            구매하기
+          </button>
+        </div>
+        <% } else { %>
+        <!-- 장바구니 비었을 때 -->
+        <div
+          class="py-20 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 flex flex-col items-center"
+        >
+          <span class="text-6xl mb-4">🛒</span>
+          <p class="text-lg mb-4">장바구니에 담긴 상품이 없습니다.</p>
+          <a href="/" class="text-purple-600 font-bold hover:underline"
+            >쇼핑하러 가기 →</a
+          >
+        </div>
+        <% } %>
+      </section>
+    </main>
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      // 전체 선택 토글
+      function toggleAll(source) {
+        const checkboxes = document.querySelectorAll(".cart-check");
+        checkboxes.forEach((cb) => (cb.checked = source.checked));
+        calculateTotal();
+      }
+
+      // 수량 변경 (실시간 재고 확인 포함)
+      async function changeQty(code, change) {
+        const qtySpan = document.getElementById(`qty-${code}`);
+        let currentQty = parseInt(qtySpan.innerText);
+        let newQty = currentQty + change;
+
+        if (newQty < 1) {
+          alert("최소 수량은 1개입니다.");
+          return;
+        }
+
+        // 수량 증가 시에만 서버 재고 체크
+        if (change > 0) {
+          try {
+            const stockRes = await fetch(`/api/product/stock?id=${code}`);
+            const stockData = await stockRes.json();
+
+            if (stockData.success) {
+              if (newQty > stockData.stock) {
+                alert("현재 재고보다 구매할 개수가 많습니다.");
+                return;
+              }
+            } else {
+              console.error("재고 정보 확인 불가");
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+            alert("서버 통신 오류");
+            return;
+          }
+        }
+
+        // 재고 확인 통과 후 업데이트 요청
+        try {
+          const res = await fetch("/cart/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productCode: code, qty: newQty }),
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            qtySpan.innerText = newQty;
+            calculateTotal();
+          } else {
+            alert(data.message || "수량 변경 실패");
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+
+      // 상품 삭제
+      async function deleteItem(code) {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        try {
+          const res = await fetch("/cart/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productCode: code }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById(`item-${code}`).remove();
+            const remaining = document.querySelectorAll(".cart-item");
+            if (remaining.length === 0) location.reload();
+            else calculateTotal();
+          } else {
+            alert("삭제 실패");
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // 총 가격 계산 (체크된 항목만)
+      function calculateTotal() {
+        const checkboxes = document.querySelectorAll(".cart-check:checked");
+        let total = 0;
+        checkboxes.forEach((cb) => {
+          const row = cb.closest(".cart-item");
+          const qtyText = row.querySelector('[id^="qty-"]').innerText;
+          const qty = parseInt(qtyText);
+          const price = parseInt(cb.dataset.price);
+          total += price * qty;
+        });
+        const formattedTotal = total.toLocaleString();
+
+        // 헤더와 푸터의 총액 표시 업데이트
+        const headerTotal = document.getElementById("headerTotal"); // 헤더에 ID가 있다면
+        if (headerTotal) headerTotal.innerText = formattedTotal;
+
+        const footerTotal = document.getElementById("footerTotal");
+        if (footerTotal) footerTotal.innerText = formattedTotal;
+      }
+
+      // 결제 페이지로 이동 (체크된 상품만)
+      function goToCheckout() {
+        const checkboxes = document.querySelectorAll(".cart-check:checked");
+        if (checkboxes.length === 0) {
+          alert("구매할 상품을 선택해주세요.");
+          return;
+        }
+
+        const selectedCodes = [];
+        checkboxes.forEach((cb) => {
+          const row = cb.closest(".cart-item");
+          const code = row.id.replace("item-", "");
+          selectedCodes.push(code);
+        });
+
+        // items 파라미터로 상품 코드 전달
+        location.href = "/checkout?items=" + selectedCodes.join(",");
+      }
+    </script>
+  </body>
+</html>

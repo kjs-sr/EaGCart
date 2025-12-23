@@ -1,0 +1,27 @@
+<aside class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+  <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-4">마이페이지</p>
+  <nav class="space-y-6 text-sm font-semibold text-slate-500">
+    <div>
+      <p class="text-xs uppercase tracking-[0.3em] text-slate-300 mb-2">활동</p>
+      <ul class="space-y-2">
+        <li><a href="/mypage/orders" class="<%= activeTab === 'orders' ? 'text-purple-600' : '' %>">주문 목록 / 배송조회</a></li>
+        <li><a href="/mypage/wishlist" class="<%= activeTab === 'wishlist' ? 'text-purple-600' : '' %>">찜 리스트</a></li>
+        <li><a href="/mypage/reviews" class="<%= activeTab === 'reviews' ? 'text-purple-600' : '' %>">리뷰 관리</a></li>
+        <li><a href="/qna" class="">문의하기</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs uppercase tracking-[0.3em] text-slate-300 mb-2">혜택</p>
+      <ul class="space-y-2">
+        <li><a href="/mypage/coupons" class="<%= activeTab === 'coupons' ? 'text-purple-600' : '' %>">할인 쿠폰</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs uppercase tracking-[0.3em] text-slate-300 mb-2">내 정보</p>
+      <ul class="space-y-2">
+        <li><a href="/mypage/profile" class="<%= activeTab === 'profile' ? 'text-purple-600' : '' %>">개인정보확인 / 수정</a></li>
+      </ul>
+    </div>
+  </nav>
+</aside>
+

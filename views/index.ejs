@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EaGCart - 게임 팩/카트리지 전문 쇼핑몰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-white">
+    <div class="min-h-screen flex flex-col">
+      <%- include('./partials/header.ejs') %>
+
+      <!-- 메인 배너 영역 -->
+      <section class="w-full"><%- include('./partials/banner.ejs') %></section>
+
+      <div class="bg-white flex-grow">
+        <div class="max-w-7xl mx-auto w-full px-6 py-8">
+          <!-- [Hot Deal] -->
+          <% if (typeof discountProducts !== 'undefined' &&
+          discountProducts.length > 0) { %>
+          <div class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="text-rose-600 mr-2">🔥 Hot Deal!</span> 지금 할인
+              중인 상품
+            </h2>
+
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+            >
+              <% discountProducts.forEach(product => { %>
+              <!-- 품절 체크 -->
+              <% if (product.status === '품절') { %>
+              <div
+                class="product-item p-4 border border-gray-200 bg-gray-50 rounded-lg shadow-sm relative cursor-not-allowed opacity-75"
+              >
+                <div
+                  class="w-full aspect-[4/3] bg-white rounded-md overflow-hidden mb-3 relative flex items-center justify-center border border-gray-100 grayscale"
+                >
+                  <% if (product.thumbnail) { %>
+                  <img
+                    src="<%= product.thumbnail %>"
+                    alt="<%= product.name %>"
+                    class="w-full h-full object-contain"
+                  />
+                  <% } else { %>
+                  <div
+                    class="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+                  >
+                    No Image
+                  </div>
+                  <% } %>
+                  <!-- 품절 오버레이 -->
+                  <div
+                    class="absolute inset-0 bg-black/50 z-20 flex items-center justify-center text-white font-bold text-lg"
+                  >
+                    품절
+                  </div>
+                </div>
+                <div class="flex-1 flex flex-col">
+                  <p class="font-medium text-gray-600 truncate mb-1">
+                    <%= product.name %>
+                  </p>
+                  <div class="text-xs text-gray-400 mb-2 truncate h-4">
+                    <%= product.devices || '' %>
+                  </div>
+                  <div class="mt-auto">
+                    <span class="text-sm text-gray-400">판매 중지</span>
+                  </div>
+                </div>
+              </div>
+              <% } else { %>
+              <!-- 정상 판매 상품 -->
+              <div
+                class="product-item p-4 border border-rose-100 bg-rose-50/30 rounded-lg shadow-sm hover:shadow-lg transition duration-300 cursor-pointer group flex flex-col"
+                onclick="location.href='/product/detail?id=<%= product.code %>'"
+              >
+                <!-- 기존 카드 내용 -->
+                <div
+                  class="w-full aspect-[4/3] bg-white rounded-md overflow-hidden mb-3 relative flex items-center justify-center border border-gray-100"
+                >
+                  <% if (product.thumbnail) { %>
+                  <img
+                    src="<%= product.thumbnail %>"
+                    alt="<%= product.name %>"
+                    class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <% } else { %>
+                  <div
+                    class="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+                  >
+                    No Image
+                  </div>
+                  <% } %>
+                  <div
+                    class="absolute top-0 left-0 bg-rose-600 text-white text-sm font-extrabold px-3 py-1 rounded-br-lg shadow-md z-10"
+                  >
+                    <%= product.discountRate %>% OFF
+                  </div>
+                </div>
+                <div class="flex-1 flex flex-col">
+                  <p
+                    class="font-medium text-gray-800 truncate mb-1 group-hover:text-purple-600 transition-colors"
+                  >
+                    <%= product.name %>
+                  </p>
+                  <div class="text-xs text-gray-500 mb-2 truncate h-4">
+                    <% if (product.devices) { %><span
+                      class="font-bold text-slate-600 mr-1"
+                      ><%= product.devices %></span
+                    ><% } %> <% if (product.devices && product.categories) {
+                    %><span class="text-slate-300">|</span><% } %> <% if
+                    (product.categories) { %><span class="ml-1 text-slate-500"
+                      ><%= product.categories %></span
+                    ><% } %>
+                  </div>
+                  <div class="mt-auto">
+                    <div class="flex flex-col">
+                      <span class="text-sm text-gray-400 line-through"
+                        ><%= product.price.toLocaleString() %>원</span
+                      >
+                      <span class="text-xl font-bold text-rose-600"
+                        ><%= product.salePrice.toLocaleString() %>원</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <% } %> <% }) %>
+            </div>
+          </div>
+          <% } %>
+
+          <!-- [최신 상품] -->
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">최신 등록 상품</h2>
+          <% if (typeof products !== 'undefined' && products.length > 0) { %>
+          <div
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+          >
+            <% products.forEach(product => { %> <% if (product.status ===
+            '품절') { %>
+            <div
+              class="product-item p-4 border border-gray-200 bg-gray-50 rounded-lg shadow-sm relative cursor-not-allowed opacity-75"
+            >
+              <div
+                class="w-full aspect-[4/3] bg-white rounded-md overflow-hidden mb-3 relative flex items-center justify-center border border-gray-100 grayscale"
+              >
+                <% if (product.thumbnail) { %>
+                <img
+                  src="<%= product.thumbnail %>"
+                  alt="<%= product.name %>"
+                  class="w-full h-full object-contain"
+                />
+                <% } else { %>
+                <div
+                  class="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+                >
+                  No Image
+                </div>
+                <% } %>
+                <div
+                  class="absolute inset-0 bg-black/50 z-20 flex items-center justify-center text-white font-bold text-lg"
+                >
+                  품절
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col">
+                <p class="font-medium text-gray-600 truncate mb-1">
+                  <%= product.name %>
+                </p>
+                <div class="text-xs text-gray-400 mb-2 truncate h-4">
+                  <%= product.devices || '' %>
+                </div>
+                <div class="mt-auto">
+                  <span class="text-sm text-gray-400">판매 중지</span>
+                </div>
+              </div>
+            </div>
+            <% } else { %>
+            <div
+              class="product-item p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition duration-300 cursor-pointer bg-white group flex flex-col"
+              onclick="location.href='/product/detail?id=<%= product.code %>'"
+            >
+              <!-- 기존 카드 내용 -->
+              <div
+                class="w-full aspect-[4/3] bg-gray-100 rounded-md overflow-hidden mb-3 relative flex items-center justify-center"
+              >
+                <% if (product.thumbnail) { %>
+                <img
+                  src="<%= product.thumbnail %>"
+                  alt="<%= product.name %>"
+                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                />
+                <% } else { %>
+                <div
+                  class="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+                >
+                  No Image
+                </div>
+                <% } %> <% if (product.salePrice) { %>
+                <div
+                  class="absolute top-2 left-2 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded"
+                >
+                  <%= product.discountRate %>% SALE
+                </div>
+                <% } %>
+              </div>
+              <div class="flex-1 flex flex-col">
+                <p
+                  class="font-medium text-gray-800 truncate mb-1 group-hover:text-purple-600 transition-colors"
+                >
+                  <%= product.name %>
+                </p>
+                <div class="text-xs text-gray-500 mb-2 truncate h-4">
+                  <% if (product.devices) { %><span
+                    class="font-bold text-slate-600 mr-1"
+                    ><%= product.devices %></span
+                  ><% } %> <% if (product.devices && product.categories) {
+                  %><span class="text-slate-300">|</span><% } %> <% if
+                  (product.categories) { %><span class="ml-1 text-slate-500"
+                    ><%= product.categories %></span
+                  ><% } %>
+                </div>
+                <div class="mt-auto">
+                  <% if (product.salePrice) { %>
+                  <div class="flex flex-col">
+                    <span class="text-sm text-gray-400 line-through"
+                      ><%= product.price.toLocaleString() %>원</span
+                    >
+                    <span class="text-lg font-bold text-rose-600"
+                      ><%= product.salePrice.toLocaleString() %>원</span
+                    >
+                  </div>
+                  <% } else { %>
+                  <span class="text-lg font-bold text-gray-900"
+                    ><%= product.price.toLocaleString() %>원</span
+                  >
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <% } %> <% }) %>
+          </div>
+          <% } else { %>
+          <div class="py-20 text-center text-gray-500 bg-gray-50 rounded-lg">
+            등록된 상품이 없습니다.
+          </div>
+          <% } %>
+        </div>
+      </div>
+      <%- include('./partials/footer.ejs') %>
+    </div>
+  </body>
+</html>

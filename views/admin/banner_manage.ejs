@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 배너 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dragging {
+            opacity: 0.5;
+            background-color: #f3f4f6;
+            border: 2px dashed #a78bfa;
+        }
+        .banner-slide {
+            width: 100%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active: 'banner' }) %>
+
+      <main class="flex-1 p-8 overflow-y-auto h-screen">
+        <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">
+          배너 관리
+        </h2>
+        
+        <div id="alert-message-container" class="mb-4"></div>
+
+        <!-- A. 배너 미리보기 섹션 -->
+        <section class="mb-10 bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-xl font-bold text-gray-700 mb-4">
+            🖥️ 광고/이벤트 배너 미리보기 (<span id="slide-count">0</span>개)
+          </h3>
+          <div class="w-full h-[26rem] bg-gray-200 border-2 border-dashed border-gray-300 relative overflow-hidden rounded-lg">
+            
+            <div id="banner-slider" class="w-full h-full flex transition-transform duration-300">
+                <!-- 자바스크립트로 렌더링 됩니다 -->
+            </div>
+
+            <button id="prev-slide" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white p-2 rounded-full hover:bg-opacity-50 transition z-10">❮</button>
+            <button id="next-slide" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white p-2 rounded-full hover:bg-opacity-50 transition z-10">❯</button>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          <!-- B. 배너 등록 폼 -->
+          <section class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md h-fit">
+            <h3 class="text-lg font-bold text-gray-700 mb-4">
+              ➕ 새 배너 등록
+            </h3>
+            
+            <div id="upload-form">
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">이미지 첨부 (필수)</label>
+                <div class="relative flex items-center justify-center w-full">
+                  <label
+                    for="banner-file"
+                    id="drop-area"
+                    class="flex flex-col items-center justify-center w-full h-40 border-2 border-purple-300 border-dashed rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition relative overflow-hidden"
+                  >
+                    <img id="image-preview" src="" alt="미리보기" class="hidden w-full h-full object-cover absolute z-10" />
+                    
+                    <div id="upload-prompt" class="flex flex-col items-center justify-center pt-5 pb-6 z-0">
+                        <svg class="w-8 h-8 mb-4 text-purple-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                      <p class="text-sm text-gray-700 font-bold">클릭하여 업로드</p>
+                      <p class="text-xs text-gray-500 mt-1">JPG, PNG (MAX. 2MB)</p>
+                    </div>
+                    
+                    <input id="banner-file" name="bannerImage" type="file" accept="image/png, image/jpeg" class="hidden" />
+                  </label>
+                  
+                  <button type="button" id="cancel-upload" class="hidden absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition z-20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <!-- [수정] 권장 해상도 변경 (1920 x 450) -->
+                <p class="mt-2 text-xs text-gray-500">
+                    권장 해상도: 1920 x 450px (가로 긴 배너) | 최대 용량: 2MB
+                </p>
+              </div>
+
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">이동 링크 (필수)</label>
+                <div class="flex space-x-4 mb-2">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="newLinkType" value="URL" checked class="form-radio text-purple-600 w-4 h-4" required>
+                        <!-- [수정] (외부 링크) 문구 제거 -->
+                        <span class="ml-2 text-sm text-gray-700">URL</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="newLinkType" value="PRODUCT" class="form-radio text-purple-600 w-4 h-4" required>
+                        <span class="ml-2 text-sm text-gray-700">상품코드 (내부)</span>
+                    </label>
+                </div>
+                <input
+                  type="text"
+                  id="newLinkUrl"
+                  placeholder="URL 또는 상품코드 (예: PD001)"
+                  required
+                  class="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+
+              <button
+                type="button"
+                id="add-temp-btn"
+                class="w-full bg-purple-600 text-white font-bold py-3 rounded hover:bg-purple-700 transition shadow-md"
+              >
+                배너 등록하기
+              </button>
+            </div>
+          </section>
+
+          <!-- C. 배너 목록 관리 -->
+          <section class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-bold text-gray-700 mb-4">📋 등록된 배너 목록</h3>
+            <p class="text-sm text-gray-500 mb-4">* 배너를 드래그하여 순서를 변경한 후 '변경사항 저장' 버튼을 누르세요.</p>
+            
+            <div id="banner-list-container" class="space-y-4 min-h-[100px]"> 
+                <% if (banners && banners.length > 0) { %>
+                    <% banners.forEach((banner, index) => { %>
+                    <div
+                        class="banner-item flex items-center justify-between p-3 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200 cursor-grab group bg-white"
+                        draggable="true" 
+                    >
+                        <input type="hidden" class="banner-path" value="<%= banner.imagePath %>">
+                        <div class="flex items-center space-x-4">
+                            <span class="order-number w-6 text-center font-bold text-purple-600 text-lg"><%= index + 1 %></span> 
+                            <span class="text-gray-400 cursor-move p-2 hover:bg-gray-100 rounded">☰</span>
+                            <!-- 목록 이미지 미리보기 -->
+                            <div class="w-24 h-14 bg-gray-200 rounded overflow-hidden border border-gray-300">
+                                <img src="<%= banner.imagePath %>" alt="배너 썸네일" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+
+                        <div class="flex-grow grid grid-cols-3 gap-4 mx-4 items-center">
+                            <div class="col-span-1">
+                                <label class="text-xs text-gray-400 block mb-1">링크 타입</label>
+                                <select class="banner-type w-full text-sm border border-gray-300 p-1.5 rounded focus:outline-none focus:border-purple-500 bg-white">
+                                    <!-- [수정] (외부 링크) 문구 제거 -->
+                                    <option value="URL" <%= banner.linkType === 'URL' ? 'selected' : '' %>>URL</option>
+                                    <option value="PRODUCT" <%= banner.linkType === 'PRODUCT' ? 'selected' : '' %>>상품코드</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-xs text-gray-400 block mb-1">배너 링크</label>
+                                <input
+                                    type="text"
+                                    class="banner-content w-full text-sm border border-gray-300 p-1.5 rounded focus:outline-none focus:border-purple-500 transition"
+                                    value="<%= banner.linkContent || '' %>"
+                                />
+                            </div>
+                        </div>
+
+                        <button type="button" class="delete-banner-btn text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <% }); %>
+                <% } %>
+            </div>
+            
+            <div class="mt-6 text-right space-x-4 border-t pt-4">
+                <button type="button" id="cancel-changes-btn" class="bg-gray-400 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-gray-500 transition">
+                    변경사항 취소
+                </button>
+                <button type="button" id="save-all-btn" class="bg-purple-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-purple-700 transition shadow-md">
+                    변경사항 저장
+                </button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    
+    <script>
+      const fileInput = document.getElementById("banner-file");
+      const imagePreview = document.getElementById("image-preview");
+      const uploadPrompt = document.getElementById("upload-prompt");
+      const cancelBtn = document.getElementById("cancel-upload");
+      const addTempBtn = document.getElementById("add-temp-btn");
+      const container = document.getElementById('banner-list-container');
+      
+      // 파일 미리보기 로직 (기존 유지)
+      fileInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+            if(file.size > 2 * 1024 * 1024) {
+                alert("이미지 용량은 2MB를 초과할 수 없습니다.");
+                this.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove("hidden");
+                uploadPrompt.classList.add("hidden");
+                cancelBtn.classList.remove("hidden");
+            };
+            reader.readAsDataURL(file);
+        }
+      });
+      
+      cancelBtn.addEventListener("click", function () {
+        imagePreview.src = "";
+        imagePreview.classList.add("hidden");
+        uploadPrompt.classList.remove("hidden");
+        cancelBtn.classList.add("hidden");
+        fileInput.value = "";
+      });
+
+      // === [기능 1] 배너 임시 등록 (AJAX) ===
+      addTempBtn.addEventListener("click", async () => {
+          if (!fileInput.files[0]) return alert("이미지 파일을 선택해주세요.");
+          const linkUrlVal = document.getElementById("newLinkUrl").value;
+          if (!linkUrlVal.trim()) return alert("링크 정보를 입력해주세요.");
+
+          const formData = new FormData();
+          formData.append("bannerImage", fileInput.files[0]);
+
+          try {
+              const res = await fetch("/admin/banner/upload", { method: "POST", body: formData });
+              const data = await res.json();
+              
+              if(data.success) {
+                  const linkType = document.querySelector('input[name="newLinkType"]:checked').value;
+                  
+                  // 새 배너 아이템 생성
+                  const div = document.createElement("div");
+                  div.className = "banner-item flex items-center justify-between p-3 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200 cursor-grab group bg-white";
+                  div.draggable = true;
+                  div.innerHTML = `
+                      <input type="hidden" class="banner-path" value="${data.imagePath}">
+                      <div class="flex items-center space-x-4">
+                          <span class="order-number w-6 text-center font-bold text-purple-600 text-lg"></span> 
+                          <span class="text-gray-400 cursor-move p-2 hover:bg-gray-100 rounded">☰</span>
+                          <div class="w-24 h-14 bg-gray-200 rounded overflow-hidden border border-gray-300">
+                              <img src="${data.imagePath}" alt="새 배너" class="w-full h-full object-cover">
+                          </div>
+                      </div>
+
+                      <div class="flex-grow grid grid-cols-3 gap-4 mx-4 items-center">
+                          <div class="col-span-1">
+                              <label class="text-xs text-gray-400 block mb-1">링크 타입</label>
+                              <select class="banner-type w-full text-sm border border-gray-300 p-1.5 rounded focus:outline-none focus:border-purple-500 bg-white">
+                                  <!-- [수정] (외부 링크) 문구 제거 -->
+                                  <option value="URL" ${linkType === 'URL' ? 'selected' : ''}>URL</option>
+                                  <option value="PRODUCT" ${linkType === 'PRODUCT' ? 'selected' : ''}>상품코드</option>
+                              </select>
+                          </div>
+                          <div class="col-span-2">
+                              <label class="text-xs text-gray-400 block mb-1">배너 링크</label>
+                              <input
+                                  type="text"
+                                  class="banner-content w-full text-sm border border-gray-300 p-1.5 rounded focus:outline-none focus:border-purple-500 transition"
+                                  value="${linkUrlVal}"
+                              />
+                          </div>
+                      </div>
+
+                      <button type="button" class="delete-banner-btn text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                      </button>
+                  `;
+                  
+                  container.appendChild(div);
+                  
+                  // 입력 초기화
+                  cancelBtn.click();
+                  document.getElementById("newLinkUrl").value = "";
+                  
+                  updateOrderNumbers();
+                  updateSlider();
+                  
+              } else {
+                  alert("업로드 실패: " + data.message);
+              }
+          } catch(err) {
+              console.error(err);
+              alert("업로드 중 오류가 발생했습니다.");
+          }
+      });
+      
+      // ... (나머지 삭제, 저장, 슬라이더 로직은 기존 코드 그대로 유지) ...
+      
+      // === [기능 2] 배너 목록 삭제 ===
+      container.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-banner-btn');
+        if (deleteBtn) {
+            e.preventDefault(); 
+            if (confirm('이 배너를 목록에서 제외하시겠습니까? (저장 시 반영됩니다)')) {
+                deleteBtn.closest('.banner-item').remove();
+                updateOrderNumbers();
+                updateSlider();
+            }
+        }
+      });
+
+      // === [기능 3] 변경사항 취소 (새로고침) ===
+      document.getElementById("cancel-changes-btn").addEventListener("click", () => {
+          if(confirm("저장하지 않은 변경사항은 모두 사라집니다. 취소하시겠습니까?")) {
+              location.reload();
+          }
+      });
+
+      // === [기능 4] 변경사항 저장 (Bulk Save) ===
+      document.getElementById("save-all-btn").addEventListener("click", async () => {
+          if(!confirm("현재 상태로 배너를 저장하시겠습니까?")) return;
+
+          const items = document.querySelectorAll(".banner-item");
+          const dataToSave = [];
+
+          items.forEach((item) => {
+              dataToSave.push({
+                  imagePath: item.querySelector(".banner-path").value,
+                  linkType: item.querySelector(".banner-type").value,
+                  linkContent: item.querySelector(".banner-content").value
+              });
+          });
+
+          try {
+              const res = await fetch("/admin/banner/save", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ banners: dataToSave })
+              });
+              const result = await res.json();
+
+              if(result.success) {
+                  alert("성공적으로 저장되었습니다.");
+                  location.reload();
+              } else {
+                  alert("저장 실패: " + result.message);
+              }
+          } catch(err) {
+              console.error(err);
+              alert("서버 통신 오류");
+          }
+      });
+      
+      // === 슬라이더 및 드래그 로직 ===
+      const slider = document.getElementById('banner-slider');
+      const prevBtn = document.getElementById('prev-slide');
+      const nextBtn = document.getElementById('next-slide');
+      const slideCountDisplay = document.getElementById('slide-count');
+      
+      let currentSlide = 0;
+      let totalSlides = 0;
+      
+      function updateSlider() {
+          const bannerItems = container.querySelectorAll('.banner-item');
+          totalSlides = bannerItems.length;
+          slideCountDisplay.textContent = totalSlides;
+
+          slider.innerHTML = ''; 
+          slider.style.transform = `translateX(0)`; 
+          
+          if (totalSlides > 0) {
+              bannerItems.forEach((item, index) => {
+                  const imgPath = item.querySelector('.banner-path').value;
+                  const newSlide = document.createElement('div');
+                  newSlide.className = 'banner-slide flex-shrink-0 w-full h-full';
+                  newSlide.innerHTML = `
+                      <img 
+                          src="${imgPath}" 
+                          alt="배너 이미지 ${index + 1}" 
+                          class="w-full h-full object-cover"
+                      >
+                  `;
+                  slider.appendChild(newSlide);
+              });
+              
+              setTimeout(() => {
+                 const slides = slider.querySelectorAll('.banner-slide');
+                 slides.forEach(slide => {
+                     slide.style.width = slider.parentElement.offsetWidth + 'px';
+                 });
+                 updateSlidePosition();
+              }, 50);
+          } else {
+              slider.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500 text-lg flex-shrink-0">등록된 배너가 없습니다.</div>';
+          }
+          currentSlide = 0;
+      }
+
+      function updateSlidePosition() {
+          if (totalSlides === 0) return;
+          const slideWidth = slider.parentElement.offsetWidth; 
+          slider.style.transition = 'transform 0.3s ease-in-out'; 
+          slider.style.transform = `translateX(-${currentSlide * slideWidth}px)`;
+      }
+      
+      prevBtn.addEventListener('click', () => {
+          if (totalSlides > 0) {
+              currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+              updateSlidePosition();
+          }
+      });
+
+      nextBtn.addEventListener('click', () => {
+          if (totalSlides > 0) {
+              currentSlide = (currentSlide + 1) % totalSlides;
+              updateSlidePosition();
+          }
+      });
+      
+      let draggedItem = null;
+      container.addEventListener('dragstart', (e) => {
+          const target = e.target.closest('.banner-item');
+          if (target) {
+              draggedItem = target;
+              e.dataTransfer.effectAllowed = 'move';
+              setTimeout(() => target.classList.add('dragging'), 0); 
+          }
+      });
+
+      container.addEventListener('dragend', (e) => {
+          if (draggedItem) {
+              draggedItem.classList.remove('dragging');
+          }
+          draggedItem = null;
+          updateOrderNumbers();
+          updateSlider();
+      });
+      
+      container.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (!draggedItem) return;
+          const afterElement = getDragAfterElement(container, e.clientY);
+          if (afterElement != null) {
+              if (afterElement !== draggedItem.nextElementSibling) {
+                 container.insertBefore(draggedItem, afterElement);
+              }
+          } else {
+              container.appendChild(draggedItem);
+          }
+      });
+      
+      function getDragAfterElement(container, y) {
+          const draggableElements = [...container.querySelectorAll('.banner-item:not(.dragging)')];
+          return draggableElements.reduce((closest, child) => {
+              const box = child.getBoundingClientRect();
+              const offset = y - box.top - box.height / 2; 
+              if (offset < 0 && offset > closest.offset) {
+                  return { offset: offset, element: child }; 
+              } else {
+                  return closest;
+              }
+          }, { offset: Number.NEGATIVE_INFINITY }).element;
+      }
+      
+      function updateOrderNumbers() {
+          const bannerItems = container.querySelectorAll('.banner-item');
+          bannerItems.forEach((item, index) => {
+              const orderSpan = item.querySelector('.order-number');
+              if (orderSpan) orderSpan.textContent = index + 1;
+          });
+      }
+
+      window.addEventListener('resize', () => {
+          updateSlider();
+          updateSlidePosition();
+      });
+      
+      // 초기 로딩
+      updateSlider(); 
+      updateOrderNumbers();
+    </script>
+  </body>
+</html>

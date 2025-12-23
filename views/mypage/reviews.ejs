@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지 - 리뷰 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+    <main
+      class="max-w-7xl mx-auto w-full px-6 py-12 grid gap-8 lg:grid-cols-[260px_1fr] flex-grow"
+    >
+      <%- include('./partials/nav.ejs', { activeTab }) %>
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+            리뷰 관리
+          </p>
+          <h1 class="text-3xl font-bold">작성한 리뷰 확인</h1>
+          <p class="text-sm text-slate-500 mt-2">작성하신 리뷰 목록입니다.</p>
+        </header>
+
+        <div class="grid gap-4">
+          <% if (mypage.reviewCards && mypage.reviewCards.length > 0) { %> <%
+          mypage.reviewCards.forEach((review) => { %>
+          <!-- [수정] flex-col -> flex-row 로 변경하여 가로형 디자인 적용 -->
+          <article
+            class="rounded-3xl bg-white border border-slate-100 p-6 shadow-sm flex flex-col md:flex-row items-center gap-6 hover:shadow-md transition"
+          >
+            <!-- 썸네일 -->
+            <div
+              class="w-full md:w-20 h-20 bg-gray-50 rounded-xl flex-shrink-0 overflow-hidden border border-slate-200"
+            >
+              <% if (review.thumbnail) { %>
+              <img
+                src="<%= review.thumbnail %>"
+                class="w-full h-full object-cover"
+              />
+              <% } else { %>
+              <span
+                class="flex items-center justify-center h-full text-xs text-gray-400"
+                >NoImg</span
+              >
+              <% } %>
+            </div>
+
+            <!-- 정보 영역 (가로 배치 시 flex-1) -->
+            <div class="flex-1 w-full flex flex-col justify-center">
+              <div class="flex items-center gap-2 mb-1">
+                <span
+                  class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full"
+                  ><%= review.date %></span
+                >
+                <span class="text-yellow-400 text-sm font-bold"
+                  >★ <%= review.rating %></span
+                >
+              </div>
+              <h3 class="text-sm text-slate-500 font-medium truncate mb-1">
+                <%= review.productName %>
+              </h3>
+              <!-- [수정] 제목만 표시 (내용 제거) -->
+              <h4
+                class="text-lg font-bold text-slate-800 truncate cursor-pointer hover:text-purple-600 transition"
+                onclick="location.href='/mypage/reviews/edit/<%= review.code %>'"
+              >
+                <%= review.title %>
+              </h4>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="flex md:flex-col gap-2 w-full md:w-24 flex-shrink-0">
+              <button
+                onclick="location.href='/mypage/reviews/edit/<%= review.code %>'"
+                class="flex-1 rounded-xl border border-slate-200 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+              >
+                수정
+              </button>
+              <button
+                onclick="deleteReview('<%= review.code %>')"
+                class="flex-1 rounded-xl border border-rose-100 bg-rose-50 py-2 text-sm font-bold text-rose-600 hover:bg-rose-100 transition"
+              >
+                삭제
+              </button>
+            </div>
+          </article>
+          <% }) %> <% } else { %>
+          <div
+            class="py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200"
+          >
+            <span class="text-5xl block mb-3 opacity-30">✍️</span>
+            <p class="text-slate-500 mb-4">작성한 리뷰가 없습니다.</p>
+            <a
+              href="/mypage/orders"
+              class="text-purple-600 font-bold hover:underline text-sm"
+              >구매 내역에서 리뷰 작성하기 →</a
+            >
+          </div>
+          <% } %>
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      async function deleteReview(reviewCode) {
+        if (
+          !confirm(
+            "정말 리뷰를 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다."
+          )
+        )
+          return;
+
+        try {
+          const res = await fetch("/mypage/reviews/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reviewCode }),
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            alert("리뷰가 삭제되었습니다.");
+            location.reload();
+          } else {
+            alert(data.message || "삭제 실패");
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+    </script>
+  </body>
+</html>

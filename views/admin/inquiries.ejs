@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 문의 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen relative">
+        <!-- 1. 페이지 타이틀 -->
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">문의 관리</h2>
+        </div>
+
+        <!-- 2. 검색 및 필터 영역 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center gap-6">
+              <!-- 기간 설정 -->
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="font-bold text-gray-800">기간</span>
+                <input
+                  type="date"
+                  id="searchStartDate"
+                  class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition"
+                  value="2025-01-01"
+                  onchange="filterInquiries()"
+                />
+                <span>~</span>
+                <input
+                  type="date"
+                  id="searchEndDate"
+                  class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition"
+                  value="2025-12-31"
+                  onchange="filterInquiries()"
+                />
+              </div>
+
+              <!-- 상태 필터 -->
+              <div class="flex items-center gap-4 text-sm">
+                <span class="font-bold text-gray-800">답변상태</span>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-purple-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value="all"
+                    checked
+                    class="accent-purple-600"
+                    onchange="filterInquiries()"
+                  />
+                  전체
+                </label>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-amber-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value="대기중"
+                    class="accent-amber-500"
+                    onchange="filterInquiries()"
+                  />
+                  대기중
+                </label>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-emerald-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value="답변완료"
+                    class="accent-emerald-500"
+                    onchange="filterInquiries()"
+                  />
+                  답변완료
+                </label>
+              </div>
+            </div>
+
+            <!-- 검색창 -->
+            <div class="relative w-full md:w-1/2 lg:w-1/3">
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="작성자, 제목, 내용 검색"
+                class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition text-sm"
+                onkeyup="filterInquiries()"
+              />
+              <button
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600"
+                onclick="filterInquiries()"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 문의 목록 테이블 -->
+        <section
+          class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-center">
+              <thead
+                class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 whitespace-nowrap"
+              >
+                <tr>
+                  <th class="py-3 px-4 w-32">문의코드</th>
+                  <th class="py-3 px-4 w-32">작성자(ID)</th>
+                  <th class="py-3 px-4 text-left">제목</th>
+                  <th class="py-3 px-4 w-32">작성일</th>
+                  <th class="py-3 px-4 w-24">상태</th>
+                  <th class="py-3 px-4 w-24">관리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-600">
+                <% if (admin.inquiryTable && admin.inquiryTable.length > 0) { %>
+                <% admin.inquiryTable.forEach((item) => { %>
+                <tr
+                  class="inquiry-row hover:bg-gray-50 transition duration-150"
+                  data-code="<%= item.code %>"
+                  data-author="<%= item.userName %>"
+                  data-id="<%= item.userId %>"
+                  data-title="<%= item.title %>"
+                  data-status="<%= item.status %>"
+                  data-date="<%= item.regDate %>"
+                  data-content="<%= item.content %>"
+                >
+                  <td class="py-3 px-4 font-mono text-xs text-gray-500">
+                    <%= item.code %>
+                  </td>
+                  <td class="py-3 px-4 text-gray-800 font-medium">
+                    <%= item.userName %><br />
+                    <span class="text-xs text-gray-400 font-mono"
+                      >(<%= item.userId %>)</span
+                    >
+                  </td>
+                  <td
+                    class="py-3 px-4 text-left text-gray-800 truncate max-w-md cursor-pointer hover:text-purple-600"
+                    onclick="openAnswerModal('<%= item.code %>')"
+                  >
+                    <%= item.title %>
+                  </td>
+                  <td class="py-3 px-4 text-xs text-gray-500">
+                    <%= item.regDate %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <% if (item.status === '답변완료') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      >완료</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"
+                      >대기중</span
+                    >
+                    <% } %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <button
+                      onclick="openAnswerModal('<%= item.code %>')"
+                      class="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition"
+                    >
+                      확인
+                    </button>
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr id="noDataRow">
+                  <td colspan="6" class="py-12 text-center text-gray-400">
+                    등록된 문의가 없습니다.
+                  </td>
+                </tr>
+                <% } %>
+                <tr id="noSearchResult" class="hidden">
+                  <td colspan="6" class="py-12 text-center text-gray-400">
+                    검색 결과가 없습니다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- [답변 작성 모달] -->
+    <div
+      id="answerModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeAnswerModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-2xl mx-auto rounded-lg shadow-lg z-50 overflow-visible relative"
+      >
+        <div class="modal-content py-6 px-8 text-left">
+          <!-- 모달 헤더 -->
+          <div
+            class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6"
+          >
+            <p class="text-2xl font-bold text-gray-800">문의 내용 및 답변</p>
+            <div
+              class="cursor-pointer z-50 p-2 hover:bg-gray-100 rounded-full"
+              onclick="closeAnswerModal()"
+            >
+              ✕
+            </div>
+          </div>
+
+          <!-- 문의 내용 (읽기 전용) -->
+          <div
+            class="bg-gray-50 p-5 rounded-xl border border-gray-200 mb-6 space-y-3"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <span
+                  id="modalCategory"
+                  class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded mb-2 inline-block"
+                  >문의</span
+                >
+                <h3
+                  id="modalTitle"
+                  class="text-lg font-bold text-gray-800"
+                ></h3>
+              </div>
+              <div class="text-right text-xs text-gray-500">
+                <p id="modalAuthor"></p>
+                <p id="modalDate" class="font-mono mt-1"></p>
+              </div>
+            </div>
+            <hr class="border-gray-200" />
+            <div
+              class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
+              id="modalContent"
+            ></div>
+          </div>
+
+          <!-- 답변 작성 폼 -->
+          <form id="answerForm">
+            <input type="hidden" id="inquiryCode" />
+            <div class="space-y-2">
+              <label class="block text-sm font-bold text-gray-700"
+                >관리자 답변</label
+              >
+              <textarea
+                id="adminAnswer"
+                rows="6"
+                class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-sm resize-none"
+                placeholder="답변 내용을 입력해주세요..."
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end pt-6 mt-2 gap-3">
+              <button
+                type="button"
+                class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold hover:bg-gray-200 transition"
+                onclick="closeAnswerModal()"
+              >
+                닫기
+              </button>
+              <button
+                type="submit"
+                class="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition shadow-sm"
+              >
+                답변 등록
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 검색 및 필터 로직
+      function filterInquiries() {
+        const searchInput = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const statusFilter = document.querySelector(
+          'input[name="status"]:checked'
+        ).value;
+        const searchStartDate =
+          document.getElementById("searchStartDate").value;
+        const searchEndDate = document.getElementById("searchEndDate").value;
+
+        const rows = document.querySelectorAll(".inquiry-row");
+        let hasVisibleRow = false;
+
+        rows.forEach((row) => {
+          const title = (row.getAttribute("data-title") || "").toLowerCase();
+          const author = (row.getAttribute("data-author") || "").toLowerCase();
+          const id = (row.getAttribute("data-id") || "").toLowerCase();
+          const content = (
+            row.getAttribute("data-content") || ""
+          ).toLowerCase();
+          const status = row.getAttribute("data-status");
+          const date = row.getAttribute("data-date"); // YYYY-MM-DD
+
+          // 검색어 매칭
+          const isSearchMatch =
+            title.includes(searchInput) ||
+            author.includes(searchInput) ||
+            id.includes(searchInput) ||
+            content.includes(searchInput);
+
+          // 상태 매칭
+          const isStatusMatch =
+            statusFilter === "all" || status === statusFilter;
+
+          // 날짜 매칭
+          let isDateMatch = true;
+          if (searchStartDate && searchEndDate && date) {
+            if (date < searchStartDate || date > searchEndDate)
+              isDateMatch = false;
+          }
+
+          if (isSearchMatch && isStatusMatch && isDateMatch) {
+            row.classList.remove("hidden");
+            hasVisibleRow = true;
+          } else {
+            row.classList.add("hidden");
+          }
+        });
+
+        const noSearchRow = document.getElementById("noSearchResult");
+        const noDataRow = document.getElementById("noDataRow");
+
+        if (!hasVisibleRow) {
+          if (!noDataRow) noSearchRow.classList.remove("hidden");
+        } else {
+          noSearchRow.classList.add("hidden");
+        }
+      }
+
+      // 모달 열기 (상세 조회)
+      async function openAnswerModal(code) {
+        try {
+          const res = await fetch(`/admin/inquiries/detail/${code}`);
+          const data = await res.json();
+
+          if (!data.success) return alert(data.message);
+
+          const inq = data.inquiry;
+
+          // 데이터 바인딩
+          document.getElementById("inquiryCode").value = inq.INQUIRY_CODE;
+          document.getElementById("modalTitle").innerText = inq.TITLE;
+          document.getElementById(
+            "modalAuthor"
+          ).innerText = `${inq.USER_NAME} (${inq.USER_ID})`;
+          document.getElementById("modalDate").innerText = inq.REG_DATE;
+          document.getElementById("modalContent").innerText = inq.CONTENT;
+
+          const answerArea = document.getElementById("adminAnswer");
+          answerArea.value = inq.ANSWER_CONTENT || "";
+
+          // 이미 답변이 있으면 텍스트 색상 변경 등의 시각적 효과 (선택사항)
+          if (inq.STATUS === "답변완료") {
+            // 답변 수정 모드로 활용 가능
+          }
+
+          // 모달 표시
+          const modal = document.getElementById("answerModal");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          document.body.classList.add("modal-active");
+        } catch (e) {
+          console.error(e);
+          alert("정보를 불러오지 못했습니다.");
+        }
+      }
+
+      function closeAnswerModal() {
+        document.getElementById("answerModal").classList.add("hidden");
+        document.getElementById("answerModal").classList.remove("flex");
+        document.body.classList.remove("modal-active");
+      }
+
+      // 답변 등록
+      document
+        .getElementById("answerForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const code = document.getElementById("inquiryCode").value;
+          const answer = document.getElementById("adminAnswer").value;
+
+          if (!answer.trim()) return alert("답변 내용을 입력해주세요.");
+
+          try {
+            const res = await fetch("/admin/inquiries/answer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, answer }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              alert("답변이 등록되었습니다.");
+              location.reload();
+            } else {
+              alert("등록 실패: " + data.message);
+            }
+          } catch (e) {
+            console.error(e);
+            alert("서버 통신 오류");
+          }
+        });
+    </script>
+  </body>
+</html>

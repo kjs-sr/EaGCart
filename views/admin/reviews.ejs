@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 리뷰 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen relative">
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">리뷰 관리</h2>
+        </div>
+
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+          <form
+            action="/admin/reviews"
+            method="GET"
+            class="flex flex-col gap-4"
+          >
+            <!-- [수정] justify-between 제거 -> 왼쪽 정렬 (gap-6 유지) -->
+            <div class="flex flex-col md:flex-row items-center gap-6">
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="font-bold text-gray-800">작성일</span>
+                <input
+                  type="date"
+                  name="startDate"
+                  class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition"
+                  value="<%= filters.startDate %>"
+                />
+                <span>~</span>
+                <input
+                  type="date"
+                  name="endDate"
+                  class="border border-gray-300 rounded px-2 py-1 focus:border-purple-500 outline-none transition"
+                  value="<%= filters.endDate %>"
+                />
+              </div>
+              <div class="flex items-center gap-4 text-sm">
+                <span class="font-bold text-gray-800 hidden md:inline"
+                  >상태</span
+                >
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-purple-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="all"
+                    checked
+                    class="accent-purple-600 w-4 h-4"
+                    onchange="filterReviews()"
+                  /><span>전체</span>
+                </label>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-emerald-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="ACTIVE"
+                    class="accent-emerald-500 w-4 h-4"
+                    onchange="filterReviews()"
+                  /><span>정상</span>
+                </label>
+                <label
+                  class="flex items-center gap-1 cursor-pointer hover:text-rose-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="BANNED"
+                    class="accent-rose-500 w-4 h-4"
+                    onchange="filterReviews()"
+                  /><span>제재</span>
+                </label>
+              </div>
+            </div>
+            <div class="relative w-full md:w-1/2 lg:w-1/3">
+              <input
+                type="text"
+                name="search"
+                placeholder="리뷰코드, 작성자, 제목 검색"
+                class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition text-sm"
+                value="<%= filters.keyword %>"
+              />
+              <button
+                type="submit"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section
+          class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-center">
+              <thead
+                class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200 whitespace-nowrap"
+              >
+                <tr>
+                  <th class="py-3 px-4 w-32">리뷰코드</th>
+                  <th class="py-3 px-4 w-40 truncate">상품명</th>
+                  <th class="py-3 px-4 w-40">작성자(ID)</th>
+                  <th class="py-3 px-4 text-left">리뷰제목</th>
+                  <th class="py-3 px-4 w-32">작성일</th>
+                  <th class="py-3 px-4 w-24">상태</th>
+                  <th class="py-3 px-4 w-24">관리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-600">
+                <% if (admin.reviewTable && admin.reviewTable.length > 0) { %>
+                <% admin.reviewTable.forEach((review) => { %>
+                <tr
+                  class="review-row hover:bg-gray-50 transition duration-150"
+                  data-status="<%= review.status %>"
+                >
+                  <td class="py-3 px-4 font-mono text-xs text-gray-500">
+                    <%= review.code %>
+                  </td>
+                  <td
+                    class="py-3 px-4 truncate max-w-[150px]"
+                    title="<%= review.productName %>"
+                  >
+                    <%= review.productName %>
+                  </td>
+                  <td class="py-3 px-4 font-medium"><%= review.author %></td>
+                  <td
+                    class="py-3 px-4 text-left text-gray-800 truncate max-w-xs font-bold"
+                    title="<%= review.title %>"
+                  >
+                    <%= review.title %>
+                  </td>
+                  <td class="py-3 px-4 text-xs text-gray-400 whitespace-nowrap">
+                    <%= review.date %>
+                  </td>
+                  <td class="py-3 px-4 whitespace-nowrap">
+                    <% if (review.status === 'ACTIVE') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      >정상</span
+                    >
+                    <% } else if (review.status === 'BANNED') { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200"
+                      >제재</span
+                    >
+                    <% } else { %>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200"
+                      ><%= review.status %></span
+                    >
+                    <% } %>
+                  </td>
+                  <td class="py-3 px-4">
+                    <button
+                      class="inline-block px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition shadow-sm whitespace-nowrap"
+                      onclick="openReviewModal('<%= review.code %>')"
+                    >
+                      관리
+                    </button>
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr>
+                  <td colspan="7" class="py-12 text-center text-gray-400">
+                    등록된 리뷰가 없습니다.
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- 모달 등 나머지 코드는 기존과 동일 -->
+    <div
+      id="reviewModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeReviewModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-lg z-50 overflow-y-auto relative max-h-[90vh] flex flex-col"
+      >
+        <div
+          class="flex justify-between items-center py-4 px-6 border-b border-gray-200 shrink-0"
+        >
+          <h3 class="text-xl font-bold text-gray-800">리뷰 상세 관리</h3>
+          <button
+            class="text-gray-400 hover:text-gray-600"
+            onclick="closeReviewModal()"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar">
+          <form id="reviewEditForm" class="space-y-6">
+            <input type="hidden" id="modalReviewCode" />
+            <div
+              class="bg-gray-50 p-4 rounded-lg border border-gray-100 grid grid-cols-2 gap-4 text-sm"
+            >
+              <div>
+                <span class="block text-xs font-bold text-gray-500 mb-1"
+                  >작성자(ID)</span
+                >
+                <span id="modalAuthor" class="font-medium text-gray-800"></span>
+              </div>
+              <div>
+                <span class="block text-xs font-bold text-gray-500 mb-1"
+                  >작성일</span
+                >
+                <span id="modalDate" class="font-mono text-gray-600"></span>
+              </div>
+              <div class="col-span-2">
+                <span class="block text-xs font-bold text-gray-500 mb-1"
+                  >상품명</span
+                >
+                <span
+                  id="modalProduct"
+                  class="font-medium text-gray-800"
+                ></span>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h4
+                  id="modalTitle"
+                  class="font-bold text-lg text-slate-800 truncate"
+                ></h4>
+                <span
+                  id="modalRating"
+                  class="text-amber-400 font-bold text-sm"
+                ></span>
+              </div>
+              <div
+                id="modalImages"
+                class="flex gap-2 overflow-x-auto mb-3 pb-2 custom-scrollbar"
+              ></div>
+              <div
+                class="bg-white border border-gray-200 rounded-lg p-3 min-h-[100px] text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
+                id="modalContent"
+              ></div>
+            </div>
+            <div class="border-t border-gray-100 pt-4">
+              <label class="block text-sm font-bold text-gray-700 mb-3"
+                >리뷰 상태 변경</label
+              >
+              <div class="grid grid-cols-2 gap-3">
+                <label class="cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="modalStatus"
+                    value="ACTIVE"
+                    class="peer hidden"
+                  />
+                  <div
+                    class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:border-emerald-200 peer-checked:ring-1 peer-checked:ring-emerald-200 transition font-bold group-hover:bg-gray-50 text-sm"
+                  >
+                    정상 (공개)
+                  </div>
+                </label>
+                <label class="cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="modalStatus"
+                    value="BANNED"
+                    class="peer hidden"
+                  />
+                  <div
+                    class="py-3 text-center rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 peer-checked:border-rose-200 peer-checked:ring-1 peer-checked:ring-rose-200 transition font-bold group-hover:bg-gray-50 text-sm"
+                  >
+                    제재 (비공개)
+                  </div>
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div
+          class="flex justify-end py-4 px-6 border-t border-gray-200 shrink-0 gap-2 bg-white rounded-b-lg"
+        >
+          <button
+            type="button"
+            class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold hover:bg-gray-200 transition text-sm"
+            onclick="closeReviewModal()"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            class="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition shadow-sm text-sm"
+            onclick="saveReviewStatus()"
+          >
+            저장하기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function filterReviews() {
+        const statusFilter = document.querySelector(
+          'input[name="statusFilter"]:checked'
+        ).value;
+        const rows = document.querySelectorAll(".review-row");
+        rows.forEach((row) => {
+          const status = row.dataset.status;
+          if (statusFilter === "all" || status === statusFilter) {
+            row.classList.remove("hidden");
+          } else {
+            row.classList.add("hidden");
+          }
+        });
+      }
+
+      async function openReviewModal(reviewCode) {
+        try {
+          const res = await fetch(`/admin/reviews/detail/${reviewCode}`);
+          const data = await res.json();
+          if (!data.success) {
+            return alert(data.message || "정보를 불러올 수 없습니다.");
+          }
+          const review = data.review;
+          document.getElementById("modalReviewCode").value = review.code;
+          document.getElementById("modalAuthor").textContent = review.author; // ID 포함된 문자열
+          document.getElementById("modalDate").textContent = review.date;
+          document.getElementById("modalProduct").textContent =
+            review.productName;
+          document.getElementById("modalTitle").textContent = review.title;
+          document.getElementById("modalContent").textContent = review.content;
+          document.getElementById("modalRating").textContent =
+            "★ " + review.rating;
+
+          const imgContainer = document.getElementById("modalImages");
+          imgContainer.innerHTML = "";
+          if (review.images && review.images.length > 0) {
+            review.images.forEach((src) => {
+              const img = document.createElement("img");
+              img.src = src;
+              img.className =
+                "h-20 w-auto rounded border border-gray-200 object-cover";
+              imgContainer.appendChild(img);
+            });
+          }
+
+          const radios = document.getElementsByName("modalStatus");
+          for (let r of radios) {
+            if (r.value === review.status) r.checked = true;
+          }
+
+          const modal = document.getElementById("reviewModal");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          document.body.classList.add("modal-active");
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+
+      function closeReviewModal() {
+        const modal = document.getElementById("reviewModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        document.body.classList.remove("modal-active");
+      }
+
+      async function saveReviewStatus() {
+        const reviewCode = document.getElementById("modalReviewCode").value;
+        const status = document.querySelector(
+          'input[name="modalStatus"]:checked'
+        )?.value;
+        if (!status) return alert("상태를 선택해주세요.");
+        try {
+          const res = await fetch("/admin/reviews/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reviewCode, status }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("상태가 변경되었습니다.");
+            location.reload();
+          } else {
+            alert("변경 실패: " + data.message);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 오류");
+        }
+      }
+    </script>
+  </body>
+</html>

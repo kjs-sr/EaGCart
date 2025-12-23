@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>계정 찾기 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <!-- ... (상단 디자인 기존 동일) ... -->
+    <main class="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <div class="mb-8">
+        <a href="/" class="hover:opacity-80 transition-opacity">
+          <img
+            src="/images/logo.png"
+            alt="EaGCart 로고"
+            class="h-28 w-auto object-contain"
+          />
+        </a>
+      </div>
+
+      <section
+        class="w-full max-w-lg bg-white rounded-3xl shadow-xl p-8 sm:p-10"
+      >
+        <h1 class="text-2xl font-bold text-slate-800 text-center mb-8">
+          아이디/비밀번호 찾기
+        </h1>
+
+        <div class="flex p-1 bg-slate-100 rounded-2xl mb-8">
+          <button
+            type="button"
+            id="tab-id"
+            class="flex-1 py-3 text-sm font-bold rounded-xl shadow-sm bg-white text-purple-600 transition-all duration-200"
+            onclick="switchTab('id')"
+          >
+            아이디 찾기
+          </button>
+          <button
+            type="button"
+            id="tab-pw"
+            class="flex-1 py-3 text-sm font-bold rounded-xl text-slate-500 hover:text-slate-700 transition-all duration-200"
+            onclick="switchTab('pw')"
+          >
+            비밀번호 찾기
+          </button>
+        </div>
+
+        <!-- 아이디 찾기 폼 -->
+        <div id="form-find-id" class="space-y-5">
+          <div class="flex gap-3">
+            <input
+              type="email"
+              id="id-email"
+              placeholder="가입한 이메일 입력"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors placeholder:text-slate-400"
+            />
+            <button
+              id="btn-send-id"
+              onclick="sendAuthCode('id-email', 'btn-send-id')"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증번호 전송
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="id-code"
+              placeholder="인증번호 6자리"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors placeholder:text-slate-400"
+            />
+            <button
+              onclick="verifyAuthCode('id-code')"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증확인
+            </button>
+          </div>
+          <button
+            onclick="submitFind('id')"
+            class="w-full rounded-2xl bg-purple-600 py-4 font-bold text-white tracking-wide hover:bg-purple-700 transition shadow-md mt-4"
+          >
+            아이디 찾기
+          </button>
+        </div>
+
+        <!-- 비밀번호 찾기 폼 -->
+        <div id="form-find-pw" class="space-y-5 hidden">
+          <div>
+            <input
+              type="text"
+              id="pw-userid"
+              placeholder="아이디 입력"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors placeholder:text-slate-400"
+            />
+          </div>
+          <div class="flex gap-3">
+            <input
+              type="email"
+              id="pw-email"
+              placeholder="가입한 이메일 입력"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors placeholder:text-slate-400"
+            />
+            <button
+              id="btn-send-pw"
+              onclick="sendAuthCode('pw-email', 'btn-send-pw')"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증번호 전송
+            </button>
+          </div>
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="pw-code"
+              placeholder="인증번호 6자리"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors placeholder:text-slate-400"
+            />
+            <button
+              onclick="verifyAuthCode('pw-code')"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증확인
+            </button>
+          </div>
+          <button
+            onclick="submitFind('pw')"
+            class="w-full rounded-2xl bg-purple-600 py-4 font-bold text-white tracking-wide hover:bg-purple-700 transition shadow-md mt-4"
+          >
+            비밀번호 재설정
+          </button>
+        </div>
+
+        <div class="mt-8 text-center text-sm font-semibold text-slate-500">
+          <a
+            href="/login"
+            class="text-purple-600 hover:text-purple-800 transition-colors"
+            >로그인 화면으로 돌아가기</a
+          >
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      let isVerified = false;
+
+      function switchTab(type) {
+        const tabId = document.getElementById("tab-id");
+        const tabPw = document.getElementById("tab-pw");
+        const formId = document.getElementById("form-find-id");
+        const formPw = document.getElementById("form-find-pw");
+
+        isVerified = false;
+
+        if (type === "id") {
+          tabId.className =
+            "flex-1 py-3 text-sm font-bold rounded-xl shadow-sm bg-white text-purple-600 transition-all duration-200";
+          tabPw.className =
+            "flex-1 py-3 text-sm font-bold rounded-xl text-slate-500 hover:text-slate-700 transition-all duration-200";
+          formId.classList.remove("hidden");
+          formPw.classList.add("hidden");
+        } else {
+          tabPw.className =
+            "flex-1 py-3 text-sm font-bold rounded-xl shadow-sm bg-white text-purple-600 transition-all duration-200";
+          tabId.className =
+            "flex-1 py-3 text-sm font-bold rounded-xl text-slate-500 hover:text-slate-700 transition-all duration-200";
+          formPw.classList.remove("hidden");
+          formId.classList.add("hidden");
+        }
+      }
+
+      async function sendAuthCode(inputId, btnId) {
+        const email = document.getElementById(inputId).value;
+        const btn = document.getElementById(btnId);
+
+        if (!email) return alert("이메일을 입력해주세요.");
+
+        const originalText = btn.innerText;
+        btn.innerText = "전송중...";
+        btn.disabled = true;
+
+        try {
+          // [수정됨] type: 'find' 추가
+          const res = await fetch("/auth/send-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, type: "find" }),
+          });
+          const data = await res.json();
+          alert(data.message);
+
+          btn.innerText = "재전송";
+        } catch (e) {
+          alert("전송 실패");
+          btn.innerText = originalText;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function verifyAuthCode(inputId) {
+        const code = document.getElementById(inputId).value;
+        if (!code) return alert("인증번호를 입력해주세요.");
+
+        try {
+          const res = await fetch("/auth/verify-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("인증되었습니다.");
+            isVerified = true;
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+
+      async function submitFind(type) {
+        if (!isVerified) return alert("이메일 인증을 먼저 완료해주세요.");
+
+        const email = document.getElementById(
+          type === "id" ? "id-email" : "pw-email"
+        ).value;
+        const endpoint = type === "id" ? "/auth/find-id" : "/auth/find-pw";
+
+        const payload = { email };
+
+        if (type === "pw") {
+          const userId = document.getElementById("pw-userid").value;
+          if (!userId) return alert("아이디를 입력해주세요.");
+          payload.userId = userId;
+        }
+
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            alert(data.message);
+
+            if (confirm("로그인 화면으로 이동하시겠습니까?")) {
+              location.href = "/login";
+            }
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("서버 통신 중 오류가 발생했습니다.");
+        }
+      }
+    </script>
+  </body>
+</html>

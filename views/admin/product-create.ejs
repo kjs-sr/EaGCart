@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 상품 등록 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .dragging {
+        opacity: 0.5;
+        background-color: #f3f4f6;
+        border: 2px dashed #a78bfa;
+      }
+      .cursor-grab {
+        cursor: grab;
+      }
+      .cursor-grabbing {
+        cursor: grabbing;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+
+      /* [수정됨] 숫자 입력창 화살표(Spinner) 숨기기 */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen">
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">상품 등록</h2>
+          <button
+            onclick="openTagModal()"
+            class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+              />
+            </svg>
+            태그 관리
+          </button>
+        </div>
+
+        <section class="bg-white p-8 rounded-lg shadow-md">
+          <form
+            action="/admin/products/new"
+            method="post"
+            enctype="multipart/form-data"
+            class="space-y-8"
+            id="productForm"
+          >
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >상품명 <span class="text-red-500">*</span></label
+              >
+              <input
+                type="text"
+                name="name"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+                placeholder="상품명을 입력하세요"
+                required
+              />
+            </div>
+
+            <div class="space-y-6">
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2"
+                  >기기 태그</label
+                >
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div class="flex flex-wrap gap-3" id="deviceCheckboxes">
+                    <% if (options && options.devices) { %> <%
+                    options.devices.forEach(device => { %>
+                    <label
+                      class="inline-flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded transition"
+                    >
+                      <input
+                        type="checkbox"
+                        name="devices"
+                        value="<%= device.code %>"
+                        class="form-checkbox h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-700 font-medium"
+                        ><%= device.name %></span
+                      >
+                    </label>
+                    <% }) %> <% } %>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2"
+                  >카테고리 태그</label
+                >
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div class="flex flex-wrap gap-3" id="categoryCheckboxes">
+                    <% if (options && options.categories) { %> <%
+                    options.categories.forEach(cate => { %>
+                    <label
+                      class="inline-flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded transition"
+                    >
+                      <input
+                        type="checkbox"
+                        name="categories"
+                        value="<%= cate.code %>"
+                        class="form-checkbox h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-700 font-medium"
+                        ><%= cate.name %></span
+                      >
+                    </label>
+                    <% }) %> <% } %>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-8 md:grid-cols-3">
+              <div class="md:col-span-1 space-y-6">
+                <!-- 판매가 -->
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 mb-2"
+                    >판매가 <span class="text-red-500">*</span></label
+                  >
+                  <div class="relative">
+                    <input
+                      type="number"
+                      name="price"
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+                      placeholder="0"
+                      required
+                    />
+                    <span
+                      class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold"
+                      >원</span
+                    >
+                  </div>
+                </div>
+                <!-- 원가 -->
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 mb-2"
+                    >원가</label
+                  >
+                  <div class="relative">
+                    <input
+                      type="number"
+                      name="originalPrice"
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+                      placeholder="0"
+                    />
+                    <span
+                      class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold"
+                      >원</span
+                    >
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1">
+                    * 입력하지 않으면 판매가와 동일하게 저장됩니다.
+                  </p>
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-bold text-gray-700 mb-2"
+                  >상품 설명</label
+                >
+                <textarea
+                  name="description"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition h-[180px]"
+                  placeholder="상품에 대한 상세 설명을 입력하세요"
+                ></textarea>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >상품 이미지 (최대 5장 / 드래그하여 순서 변경)</label
+              >
+              <div class="flex flex-col md:flex-row gap-6">
+                <label
+                  class="md:w-1/3 h-48 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-purple-50 hover:border-purple-400 transition group relative"
+                >
+                  <input
+                    type="file"
+                    id="fileInput"
+                    multiple
+                    accept="image/png, image/jpeg"
+                    class="hidden"
+                  />
+                  <svg
+                    class="w-10 h-10 text-gray-400 group-hover:text-purple-500 mb-2 transition"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span
+                    class="text-sm font-bold text-gray-600 group-hover:text-purple-600 transition"
+                    >이미지 추가</span
+                  >
+                  <span class="text-xs text-gray-400 mt-1">JPG, PNG</span>
+                </label>
+                <div
+                  class="md:w-2/3 border border-gray-200 rounded-lg p-4 bg-gray-50 h-48 overflow-y-auto"
+                >
+                  <div id="image-preview-list" class="space-y-2">
+                    <div
+                      class="text-sm text-gray-400 text-center py-12 empty-msg"
+                    >
+                      첨부된 파일이 없습니다.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <input
+                type="file"
+                name="productImages"
+                id="finalFileInput"
+                class="hidden"
+                multiple
+              />
+            </div>
+
+            <div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
+              <a
+                href="/admin/products"
+                class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition"
+                >취소</a
+              >
+              <button
+                type="submit"
+                class="px-8 py-3 rounded-lg bg-purple-600 text-white font-bold hover:bg-purple-700 transition shadow-md"
+              >
+                상품 등록
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <!-- 태그 관리 모달 (기존 유지) -->
+    <div
+      id="tagModal"
+      class="modal fixed inset-0 hidden items-center justify-center z-50"
+    >
+      <div
+        class="modal-overlay absolute inset-0 bg-gray-900 opacity-50"
+        onclick="closeTagModal()"
+      ></div>
+      <div
+        class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-lg z-50 overflow-y-auto relative max-h-[90vh]"
+      >
+        <div class="modal-content py-4 text-left px-6">
+          <div
+            class="flex justify-between items-center pb-3 border-b border-gray-200 mb-4"
+          >
+            <p class="text-2xl font-bold text-gray-800">태그 관리</p>
+            <div
+              class="modal-close cursor-pointer z-50 p-2 hover:bg-gray-100 rounded-full"
+              onclick="closeTagModal()"
+            >
+              ✕
+            </div>
+          </div>
+          <div class="mt-2">
+            <div class="flex border-b border-gray-200 mb-4">
+              <button
+                id="tab-device"
+                class="flex-1 py-2 px-4 text-purple-600 border-b-2 border-purple-600 font-semibold transition"
+                onclick="switchTagTab('device')"
+              >
+                기기 태그
+              </button>
+              <button
+                id="tab-category"
+                class="flex-1 py-2 px-4 text-gray-500 hover:text-purple-600 transition"
+                onclick="switchTagTab('category')"
+              >
+                카테고리 태그
+              </button>
+            </div>
+            <ul
+              id="tagList"
+              class="space-y-2 mb-4 max-h-60 overflow-y-auto custom-scrollbar pr-2"
+            ></ul>
+            <div class="flex gap-2 pt-2 border-t border-gray-100 mt-4">
+              <input
+                type="text"
+                id="newTagName"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                placeholder="새 태그 이름 입력"
+              />
+              <button
+                onclick="addTag()"
+                class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-end pt-4 mt-2">
+            <button
+              class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition"
+              onclick="closeTagModal()"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ... (기존 스크립트: 이미지 처리, 태그 관리 로직 그대로 유지) ...
+      const fileInput = document.getElementById("fileInput");
+      const finalFileInput = document.getElementById("finalFileInput");
+      const listContainer = document.getElementById("image-preview-list");
+      let currentFiles = [];
+
+      fileInput.addEventListener("change", function (e) {
+        const newFiles = Array.from(e.target.files);
+        if (currentFiles.length + newFiles.length > 5)
+          return alert("최대 5장까지만 등록 가능합니다.");
+        newFiles.forEach((file) => {
+          if (file.size > 2 * 1024 * 1024)
+            alert(`[${file.name}] 용량 초과 (2MB 제한)`);
+          else currentFiles.push(file);
+        });
+        updateUI();
+        updateFileInput();
+        this.value = "";
+      });
+
+      function updateUI() {
+        listContainer.innerHTML = "";
+        if (currentFiles.length === 0) {
+          listContainer.innerHTML =
+            '<div class="text-sm text-gray-400 text-center py-12 empty-msg">첨부된 파일이 없습니다.</div>';
+          return;
+        }
+        currentFiles.forEach((file, index) => {
+          const div = document.createElement("div");
+          div.className =
+            "file-item flex items-center gap-3 bg-white p-2 rounded border border-gray-200 shadow-sm transition hover:shadow-md cursor-grab active:cursor-grabbing";
+          div.draggable = true;
+          div.dataset.index = index;
+          const reader = new FileReader();
+          reader.onload = (e) =>
+            (div.querySelector("img").src = e.target.result);
+          reader.readAsDataURL(file);
+          div.innerHTML = `<span class="font-bold text-slate-400 px-2 cursor-move">☰</span><span class="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-xs border border-purple-100 index-badge">${
+            index + 1
+          }</span><img src="" class="w-10 h-10 object-cover rounded border border-gray-100 bg-gray-100"><span class="text-sm text-gray-700 font-medium truncate flex-1">${
+            file.name
+          }</span><span class="text-xs text-gray-400 mr-2">${(
+            file.size /
+            1024 /
+            1024
+          ).toFixed(
+            2
+          )} MB</span><button type="button" onclick="removeFile(${index})" class="text-gray-400 hover:text-red-500 px-2 font-bold transition">✕</button>`;
+          listContainer.appendChild(div);
+        });
+        addDragEvents();
+      }
+
+      window.removeFile = function (index) {
+        currentFiles.splice(index, 1);
+        updateUI();
+        updateFileInput();
+      };
+
+      function updateFileInput() {
+        const dataTransfer = new DataTransfer();
+        currentFiles.forEach((file) => {
+          dataTransfer.items.add(file);
+        });
+        finalFileInput.files = dataTransfer.files;
+      }
+
+      function addDragEvents() {
+        const items = listContainer.querySelectorAll(".file-item");
+        items.forEach((item) => {
+          item.addEventListener("dragstart", () =>
+            item.classList.add("dragging")
+          );
+          item.addEventListener("dragend", () => {
+            item.classList.remove("dragging");
+            reorderFiles();
+          });
+        });
+      }
+
+      listContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(listContainer, e.clientY);
+        const draggable = document.querySelector(".dragging");
+        if (afterElement == null) listContainer.appendChild(draggable);
+        else listContainer.insertBefore(draggable, afterElement);
+      });
+
+      function getDragAfterElement(container, y) {
+        const draggableElements = [
+          ...container.querySelectorAll(".file-item:not(.dragging)"),
+        ];
+        return draggableElements.reduce(
+          (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset)
+              return { offset: offset, element: child };
+            else return closest;
+          },
+          { offset: Number.NEGATIVE_INFINITY }
+        ).element;
+      }
+
+      function reorderFiles() {
+        const newFileOrder = [];
+        const items = listContainer.querySelectorAll(".file-item");
+        items.forEach((item) => {
+          const oldIndex = item.dataset.index;
+          newFileOrder.push(currentFiles[oldIndex]);
+        });
+        currentFiles = newFileOrder;
+        updateUI();
+        updateFileInput();
+      }
+
+      // 태그 모달 로직
+      let currentTagType = "device";
+      function openTagModal() {
+        loadTags();
+        document.getElementById("tagModal").classList.remove("hidden");
+        document.getElementById("tagModal").classList.add("flex");
+        document.body.classList.add("modal-active");
+      }
+      function closeTagModal() {
+        document.getElementById("tagModal").classList.add("hidden");
+        document.getElementById("tagModal").classList.remove("flex");
+        document.body.classList.remove("modal-active");
+        refreshMainCheckboxes();
+      }
+      function switchTagTab(type) {
+        currentTagType = type;
+        const devTab = document.getElementById("tab-device");
+        const catTab = document.getElementById("tab-category");
+        if (type === "device") {
+          devTab.className =
+            "flex-1 py-2 px-4 text-purple-600 border-b-2 border-purple-600 font-semibold transition";
+          catTab.className =
+            "flex-1 py-2 px-4 text-gray-500 hover:text-purple-600 transition";
+        } else {
+          catTab.className =
+            "flex-1 py-2 px-4 text-purple-600 border-b-2 border-purple-600 font-semibold transition";
+          devTab.className =
+            "flex-1 py-2 px-4 text-gray-500 hover:text-purple-600 transition";
+        }
+        loadTags();
+      }
+      async function loadTags() {
+        const ul = document.getElementById("tagList");
+        ul.innerHTML =
+          '<li class="text-center py-4 text-gray-400">로딩중...</li>';
+        try {
+          const res = await fetch("/admin/products/tags");
+          const data = await res.json();
+          if (data.success) {
+            ul.innerHTML = "";
+            const list =
+              currentTagType === "device" ? data.devices : data.categories;
+            list.forEach((tag) => {
+              ul.innerHTML += `<li class="flex justify-between items-center bg-gray-50 p-3 rounded hover:bg-gray-100 transition"><input type="text" value="${tag.name}" id="input-${tag.code}" class="bg-transparent border-none outline-none font-medium text-gray-700 w-full" readonly><div class="flex items-center gap-2 shrink-0"><button onclick="enableEdit('${tag.code}')" id="btn-edit-${tag.code}" class="text-blue-500 hover:text-blue-700 text-sm px-2">수정</button><button onclick="saveEdit('${tag.code}')" id="btn-save-${tag.code}" class="text-green-500 hover:text-green-700 text-sm px-2 hidden">저장</button><button onclick="deleteTag('${tag.code}')" class="text-red-500 hover:text-red-700 text-sm px-2">삭제</button></div></li>`;
+            });
+          }
+        } catch (e) {
+          ul.innerHTML = "<li>로드 실패</li>";
+        }
+      }
+      function enableEdit(code) {
+        document.getElementById(`input-${code}`).readOnly = false;
+        document.getElementById(`input-${code}`).focus();
+        document
+          .getElementById(`input-${code}`)
+          .classList.add("border-b", "border-blue-300");
+        document.getElementById(`btn-edit-${code}`).classList.add("hidden");
+        document.getElementById(`btn-save-${code}`).classList.remove("hidden");
+      }
+      async function saveEdit(code) {
+        const newName = document.getElementById(`input-${code}`).value;
+        try {
+          const res = await fetch("/admin/products/tags", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: currentTagType, code, name: newName }),
+          });
+          const data = await res.json();
+          if (data.success) loadTags();
+          else alert("수정 실패");
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+      async function addTag() {
+        const name = document.getElementById("newTagName").value;
+        if (!name) return alert("태그 이름을 입력하세요");
+        try {
+          const res = await fetch("/admin/products/tags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: currentTagType, name }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById("newTagName").value = "";
+            loadTags();
+          } else alert("추가 실패");
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+      async function deleteTag(code) {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+        try {
+          const res = await fetch("/admin/products/tags", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: currentTagType, code }),
+          });
+          const data = await res.json();
+          if (data.success) loadTags();
+          else alert(data.message || "삭제 실패");
+        } catch (e) {
+          alert("오류 발생");
+        }
+      }
+      async function refreshMainCheckboxes() {
+        try {
+          const res = await fetch("/admin/products/tags");
+          const data = await res.json();
+          if (data.success) {
+            const devContainer = document.getElementById("deviceCheckboxes");
+            devContainer.innerHTML = "";
+            data.devices.forEach((d) => {
+              devContainer.innerHTML += `<label class="inline-flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded transition"><input type="checkbox" name="devices" value="${d.code}" class="form-checkbox h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500" /> <span class="ml-2 text-sm text-gray-700 font-medium">${d.name}</span></label>`;
+            });
+            const catContainer = document.getElementById("categoryCheckboxes");
+            catContainer.innerHTML = "";
+            data.categories.forEach((c) => {
+              catContainer.innerHTML += `<label class="inline-flex items-center cursor-pointer hover:bg-gray-100 p-1 rounded transition"><input type="checkbox" name="categories" value="${c.code}" class="form-checkbox h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500" /> <span class="ml-2 text-sm text-gray-700 font-medium">${c.name}</span></label>`;
+            });
+          }
+        } catch (e) {}
+      }
+      function toggleModal(modalID) {
+        const modal = document.getElementById(modalID);
+        modal.classList.toggle("hidden");
+        modal.classList.toggle("flex");
+        document.body.classList.toggle("modal-active");
+      }
+    </script>
+  </body>
+</html>

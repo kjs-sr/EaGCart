@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 - 매출 관리 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active }) %>
+
+      <main class="flex-1 p-8 space-y-6 overflow-y-auto h-screen">
+        <div
+          class="flex items-center justify-between mb-8 border-b pb-4 border-gray-300"
+        >
+          <h2 class="text-3xl font-bold text-gray-800">매출 관리</h2>
+        </div>
+
+        <!-- 필터 섹션 -->
+        <section
+          class="bg-white p-6 rounded-3xl shadow-sm space-y-6 border border-slate-100"
+        >
+          <form action="/admin/sales" method="GET" id="salesForm">
+            <!-- 1. 기간 및 단위 -->
+            <div class="grid gap-4 md:grid-cols-2 mb-6">
+              <div class="flex items-center gap-3 text-sm">
+                <span class="font-bold text-gray-700 w-16">조회 기간</span>
+                <input
+                  type="date"
+                  name="startDate"
+                  class="border border-gray-300 rounded-xl px-3 py-2 focus:border-purple-500 outline-none transition flex-1"
+                  value="<%= currentFilters.startDate %>"
+                />
+                <span class="text-gray-400">~</span>
+                <input
+                  type="date"
+                  name="endDate"
+                  class="border border-gray-300 rounded-xl px-3 py-2 focus:border-purple-500 outline-none transition flex-1"
+                  value="<%= currentFilters.endDate %>"
+                />
+              </div>
+              <div class="flex items-center gap-3 text-sm">
+                <span class="font-bold text-gray-700 w-16">조회 단위</span>
+                <div class="flex flex-1 gap-2 bg-gray-100 p-1 rounded-xl">
+                  <% ['day', 'month', 'year'].forEach(p => { %>
+                  <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="period" value="<%= p %>"
+                    class="peer hidden" <%= currentFilters.period === p ?
+                    'checked' : '' %> onchange="this.form.submit()">
+                    <div
+                      class="py-1.5 rounded-lg text-gray-500 peer-checked:bg-white peer-checked:text-purple-700 peer-checked:shadow-sm font-bold transition"
+                    >
+                      <%= p === 'day' ? '일별' : (p === 'month' ? '월별' :
+                      '년별') %>
+                    </div>
+                  </label>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-6 md:grid-cols-2">
+              <!-- 2. 상품 검색 및 태그 -->
+              <div class="border border-gray-200 rounded-2xl p-5 relative">
+                <p
+                  class="font-bold text-sm text-gray-800 mb-3 flex justify-between"
+                >
+                  상품 필터
+                  <span class="text-xs font-normal text-gray-400"
+                    >선택 안 함 = 전체 상품</span
+                  >
+                </p>
+
+                <!-- 검색 입력 -->
+                <div class="relative mb-3">
+                  <input
+                    type="text"
+                    id="prodSearch"
+                    class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 transition"
+                    placeholder="상품명 검색 (미리보기)"
+                    autocomplete="off"
+                  />
+                  <!-- 미리보기 결과창 -->
+                  <div
+                    id="prodPreview"
+                    class="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-20 hidden max-h-48 overflow-y-auto custom-scrollbar"
+                  ></div>
+                </div>
+
+                <!-- 선택된 상품 태그 영역 -->
+                <div
+                  id="selectedProducts"
+                  class="flex flex-wrap gap-2 min-h-[30px]"
+                >
+                  <% if (currentFilters.selectedProducts.length === 0) { %>
+                  <span
+                    id="allProdTag"
+                    class="bg-gray-100 text-gray-500 px-3 py-1 rounded-lg text-xs font-bold border border-gray-200"
+                    >전체 상품</span
+                  >
+                  <% } %>
+
+                  <!-- 서버에서 렌더링된 태그들 -->
+                  <% currentFilters.selectedProducts.forEach(p => { %>
+                  <span
+                    class="prod-tag bg-purple-50 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold border border-purple-100 flex items-center gap-2"
+                  >
+                    <%= p.name %>
+                    <input
+                      type="hidden"
+                      name="products"
+                      value="<%= p.code %>"
+                    />
+                    <button
+                      type="button"
+                      class="text-purple-400 hover:text-purple-600"
+                      onclick="removeTag(this)"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                  <% }) %>
+                </div>
+              </div>
+
+              <!-- 3. 보기 기준 (Metrics) -->
+              <div class="border border-gray-200 rounded-2xl p-5">
+                <p class="font-bold text-sm text-gray-800 mb-3">
+                  보기 기준 (다중 선택 가능)
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <% const metrics = currentFilters.metrics || []; const opts =
+                  [ {val: 'revenue', label: '매출액', color: 'text-purple-600'},
+                  {val: 'quantity', label: '판매량', color: 'text-blue-600'},
+                  {val: 'profit', label: '순이익', color: 'text-emerald-600'} ];
+                  %> <% opts.forEach(opt => { %>
+                  <label
+                    class="flex items-center gap-2 cursor-pointer bg-gray-50 px-4 py-2 rounded-xl border border-gray-200 hover:bg-white hover:border-gray-300 transition"
+                  >
+                    <input type="checkbox" name="metrics" value="<%= opt.val %>"
+                    class="accent-slate-800 w-4 h-4" <%=
+                    metrics.includes(opt.val) ? 'checked' : '' %>>
+                    <span class="text-sm font-bold <%= opt.color %>"
+                      ><%= opt.label %></span
+                    >
+                  </label>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. 기기 & 카테고리 필터 (접이식 UI 추천하지만 여기선 펼침) -->
+            <div class="grid gap-6 md:grid-cols-2 mt-6">
+              <div class="border border-gray-200 rounded-2xl p-5">
+                <p class="font-bold text-sm text-gray-800 mb-3">
+                  플랫폼 (Device)
+                </p>
+                <div
+                  class="flex flex-wrap gap-2 text-xs max-h-32 overflow-y-auto custom-scrollbar"
+                >
+                  <% filterLists.devices.forEach(d => { %>
+                  <label
+                    class="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-gray-200 hover:border-purple-300 transition"
+                  >
+                    <input type="checkbox" name="devices" value="<%= d.code %>"
+                    class="accent-purple-600" <%=
+                    currentFilters.devices.includes(d.code) ? 'checked' : '' %>>
+                    <span class="text-gray-600"><%= d.name %></span>
+                  </label>
+                  <% }) %>
+                </div>
+              </div>
+              <div class="border border-gray-200 rounded-2xl p-5">
+                <p class="font-bold text-sm text-gray-800 mb-3">
+                  장르 (Category)
+                </p>
+                <div
+                  class="flex flex-wrap gap-2 text-xs max-h-32 overflow-y-auto custom-scrollbar"
+                >
+                  <% filterLists.categories.forEach(c => { %>
+                  <label
+                    class="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-gray-200 hover:border-purple-300 transition"
+                  >
+                    <input type="checkbox" name="categories" value="<%= c.code
+                    %>" class="accent-purple-600" <%=
+                    currentFilters.categories.includes(c.code) ? 'checked' : ''
+                    %>>
+                    <span class="text-gray-600"><%= c.name %></span>
+                  </label>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-center mt-8">
+              <button
+                type="submit"
+                class="bg-slate-900 text-white px-12 py-3.5 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg transform active:scale-95"
+              >
+                조회하기
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- 차트 섹션 -->
+        <section
+          class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 h-[500px] flex flex-col"
+        >
+          <h3
+            class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2"
+          >
+            📊 상세 분석 차트
+            <span
+              class="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-1 rounded"
+              >필터 적용 결과</span
+            >
+          </h3>
+          <div class="flex-1 relative w-full h-full">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // --- 1. 상품 검색 & 태그 기능 ---
+      const prodInput = document.getElementById('prodSearch');
+      const prodPreview = document.getElementById('prodPreview');
+      const selectedContainer = document.getElementById('selectedProducts');
+      const allProdTag = document.getElementById('allProdTag');
+
+      let debounceTimer;
+
+      prodInput.addEventListener('input', function() {
+          const query = this.value.trim();
+          if (query.length < 1) {
+              prodPreview.classList.add('hidden');
+              return;
+          }
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(async () => {
+              try {
+                  const res = await fetch(`/admin/sales/product-search?q=${encodeURIComponent(query)}`);
+                  const data = await res.json();
+
+                  prodPreview.innerHTML = '';
+                  if(data.success && data.products.length > 0) {
+                      prodPreview.classList.remove('hidden');
+                      data.products.forEach(p => {
+                          const div = document.createElement('div');
+                          div.className = 'px-4 py-2 hover:bg-purple-50 cursor-pointer text-sm text-gray-700 truncate border-b border-gray-50 last:border-0';
+                          div.textContent = p.name;
+                          div.onclick = () => addProductTag(p.code, p.name);
+                          prodPreview.appendChild(div);
+                      });
+                  } else {
+                      prodPreview.classList.add('hidden');
+                  }
+              } catch(e) { console.error(e); }
+          }, 300);
+      });
+
+      // 외부 클릭 시 닫기
+      document.addEventListener('click', (e) => {
+          if (!prodInput.contains(e.target) && !prodPreview.contains(e.target)) {
+              prodPreview.classList.add('hidden');
+          }
+      });
+
+      function addProductTag(code, name) {
+          // 중복 체크
+          if (document.querySelector(`input[name="products"][value="${code}"]`)) {
+              prodInput.value = '';
+              prodPreview.classList.add('hidden');
+              return;
+          }
+
+          if (allProdTag) allProdTag.style.display = 'none';
+
+          const span = document.createElement('span');
+          span.className = 'prod-tag bg-purple-50 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold border border-purple-100 flex items-center gap-2 animate-fade-in';
+          span.innerHTML = `
+              ${name}
+              <input type="hidden" name="products" value="${code}">
+              <button type="button" class="text-purple-400 hover:text-purple-600" onclick="removeTag(this)">✕</button>
+          `;
+          selectedContainer.appendChild(span);
+
+          prodInput.value = '';
+          prodPreview.classList.add('hidden');
+      }
+
+      function removeTag(btn) {
+          btn.parentElement.remove();
+          if (document.querySelectorAll('.prod-tag').length === 0) {
+              if (allProdTag) allProdTag.style.display = 'inline-flex';
+          }
+      }
+
+      // --- 2. Chart.js 설정 ---
+      const chartData = <%- JSON.stringify(chartData) %>;
+      const currentMetrics = <%- JSON.stringify(currentFilters.metrics) %>;
+
+      const ctx = document.getElementById('mainChart').getContext('2d');
+
+      // 데이터셋 구성
+      const datasets = [];
+      const labels = chartData.map(d => d.label);
+
+      if (currentMetrics.includes('revenue')) {
+          datasets.push({
+              label: '매출액 (원)',
+              data: chartData.map(d => d.revenue),
+              borderColor: '#7c3aed', // Purple-600
+              backgroundColor: 'rgba(124, 58, 237, 0.1)',
+              yAxisID: 'y',
+              tension: 0.3,
+              fill: true
+          });
+      }
+      if (currentMetrics.includes('quantity')) {
+          datasets.push({
+              label: '판매량 (개)',
+              data: chartData.map(d => d.quantity),
+              borderColor: '#2563eb', // Blue-600
+              backgroundColor: 'transparent',
+              yAxisID: 'y1',
+              tension: 0.3,
+              borderDash: [5, 5]
+          });
+      }
+      if (currentMetrics.includes('profit')) {
+          datasets.push({
+              label: '순이익 (원)',
+              data: chartData.map(d => d.profit),
+              borderColor: '#059669', // Emerald-600
+              backgroundColor: 'transparent',
+              yAxisID: 'y', // 매출과 같은 축 사용 (단위가 비슷하므로)
+              tension: 0.3
+          });
+      }
+
+      new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: labels,
+              datasets: datasets
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                  mode: 'index',
+                  intersect: false,
+              },
+              scales: {
+                  y: {
+                      type: 'linear',
+                      display: true,
+                      position: 'left',
+                      title: { display: true, text: '금액 (원)' },
+                      grid: { color: '#f3f4f6' }
+                  },
+                  y1: {
+                      type: 'linear',
+                      display: currentMetrics.includes('quantity'),
+                      position: 'right',
+                      title: { display: true, text: '수량 (개)' },
+                      grid: { drawOnChartArea: false } // 왼쪽 축 그리드만 표시
+                  },
+                  x: {
+                      grid: { display: false }
+                  }
+              },
+              plugins: {
+                  legend: {
+                      position: 'top',
+                      labels: { usePointStyle: true, boxWidth: 8 }
+                  },
+                  tooltip: {
+                      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                      padding: 12,
+                      cornerRadius: 8,
+                      titleFont: { size: 13 },
+                      bodyFont: { size: 12 },
+                      callbacks: {
+                          label: function(context) {
+                              let label = context.dataset.label || '';
+                              if (label) {
+                                  label += ': ';
+                              }
+                              if (context.parsed.y !== null) {
+                                  label += context.parsed.y.toLocaleString();
+                              }
+                              return label;
+                          }
+                      }
+                  }
+              }
+          }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지 - 할인쿠폰 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* 티켓 모양 효과 */
+      .coupon-card-style {
+        background-image: radial-gradient(
+            circle at top left,
+            transparent 10px,
+            white 11px
+          ),
+          radial-gradient(circle at bottom left, transparent 10px, white 11px);
+        background-size: 51% 100%;
+        background-repeat: no-repeat;
+        background-position: left;
+      }
+      /* 만료된 쿠폰용 스타일 */
+      .coupon-card-style.expired {
+        background-image: radial-gradient(
+            circle at top left,
+            transparent 10px,
+            #f9fafb 11px
+          ),
+          radial-gradient(circle at bottom left, transparent 10px, #f9fafb 11px);
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main
+      class="max-w-7xl mx-auto w-full px-6 py-12 grid gap-8 lg:grid-cols-[260px_1fr] flex-grow"
+    >
+      <%- include('./partials/nav.ejs', { activeTab }) %>
+
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+            할인 쿠폰
+          </p>
+          <h1 class="text-3xl font-bold">보유 쿠폰 현황</h1>
+          <!-- [수정] 문구 변경 -->
+          <p class="text-sm text-slate-500 mt-2">
+            보유한 쿠폰의 정보를 확인할 수 있습니다.
+          </p>
+        </header>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <% if (typeof mypage !== 'undefined' && mypage.coupons &&
+          mypage.coupons.length > 0) { %> <%
+          mypage.coupons.forEach(function(coupon) { %>
+
+          <article
+            class="relative flex items-stretch border border-slate-200 rounded-2xl shadow-sm overflow-hidden min-h-[140px] transition hover:shadow-md <%= coupon.bgClass %>"
+          >
+            <!-- 왼쪽: 할인율 영역 -->
+            <div
+              class="w-32 flex flex-col items-center justify-center border-r border-dashed border-slate-200 flex-shrink-0 bg-opacity-10 <%= coupon.isExpired ? 'bg-gray-200' : 'bg-purple-50' %>"
+            >
+              <p
+                class="text-xs font-bold uppercase tracking-wider mb-1 <%= coupon.isExpired ? 'text-gray-400' : 'text-purple-400' %>"
+              >
+                <%= coupon.type === 'RATE' ? 'SALE' : 'DISCOUNT' %>
+              </p>
+              <span class="text-2xl font-bold <%= coupon.textClass %>">
+                <%= coupon.value %>
+              </span>
+            </div>
+
+            <!-- 오른쪽: 정보 영역 -->
+            <div class="flex-1 p-5 flex flex-col justify-between">
+              <div>
+                <h3
+                  class="text-lg font-bold text-slate-800 leading-tight mb-1 <%= coupon.isExpired ? 'text-gray-500' : '' %>"
+                >
+                  <%= coupon.title %>
+                </h3>
+                <% if (coupon.limitText) { %>
+                <p class="text-xs text-slate-400"><%= coupon.limitText %></p>
+                <% } %>
+              </div>
+
+              <div
+                class="flex items-end justify-between border-t border-slate-100 pt-3 mt-2"
+              >
+                <div>
+                  <p
+                    class="text-[10px] text-slate-400 uppercase tracking-wider"
+                  >
+                    유효기간
+                  </p>
+                  <p class="text-xs text-slate-500 font-mono mt-0.5">
+                    <%= coupon.startDate %> ~ <%= coupon.endDate %>
+                  </p>
+                </div>
+                <span class="text-sm font-bold <%= coupon.textClass %>">
+                  <%= coupon.statusText %>
+                </span>
+              </div>
+            </div>
+
+            <!-- 반원 장식 (디자인 요소) -->
+            <div
+              class="absolute top-0 bottom-0 left-[7.9rem] w-4 flex flex-col justify-between pointer-events-none"
+            >
+              <div
+                class="w-4 h-4 rounded-full bg-slate-50 -mt-2 -ml-2 border border-slate-200"
+              ></div>
+              <div
+                class="w-4 h-4 rounded-full bg-slate-50 -mb-2 -ml-2 border border-slate-200"
+              ></div>
+            </div>
+          </article>
+
+          <% }); %> <% } else { %>
+          <!-- 쿠폰 없음 -->
+          <div
+            class="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center"
+          >
+            <span class="text-5xl mb-4 opacity-30">🎫</span>
+            <p class="text-slate-500 mb-4">보유 중인 쿠폰이 없습니다.</p>
+            <a
+              href="/coupons"
+              class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-purple-600 transition shadow-lg"
+            >
+              쿠폰 받으러 가기
+            </a>
+          </div>
+          <% } %>
+        </div>
+      </section>
+    </main>
+
+    <%- include('../partials/footer.ejs') %>
+  </body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>문의 내역 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main class="flex-grow max-w-3xl mx-auto w-full px-6 py-12">
+      <!-- 상단 헤더 -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">문의 내역</h1>
+          <p class="text-sm text-slate-500 mt-1">
+            총
+            <span class="font-bold text-purple-600"
+              ><%= qna.tickets ? qna.tickets.length : 0 %></span
+            >건의 문의가 있습니다.
+          </p>
+        </div>
+        <a
+          href="/qna/write"
+          class="hidden sm:inline-flex items-center gap-1 text-sm font-bold text-white bg-purple-600 px-4 py-2.5 rounded-xl hover:bg-purple-700 transition shadow-md shadow-purple-200"
+        >
+          <span>+</span> 새 문의 작성
+        </a>
+      </div>
+
+      <!-- 문의 리스트 섹션 -->
+      <section class="space-y-4">
+        <% if (qna.tickets && qna.tickets.length > 0) { %> <%
+        qna.tickets.forEach((ticket, index) => { %>
+        <article class="group">
+          <!-- 질문 카드 헤더 -->
+          <div
+            onclick="toggleAnswer('ans-<%= index %>')"
+            class="relative z-10 bg-white border border-slate-200 rounded-2xl p-5 cursor-pointer hover:border-purple-300 hover:shadow-md transition-all duration-200 flex items-start gap-4"
+          >
+            <!-- 상태 아이콘 -->
+            <div class="flex-shrink-0 mt-1">
+              <% if (ticket.status === '답변완료') { %>
+              <div
+                class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-lg shadow-sm"
+                title="답변완료"
+              >
+                ✅
+              </div>
+              <% } else { %>
+              <div
+                class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg"
+                title="대기중"
+              >
+                ⏳
+              </div>
+              <% } %>
+            </div>
+
+            <!-- 내용 요약 -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <% if (ticket.status === '답변완료') { %>
+                <span
+                  class="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100"
+                  >답변완료</span
+                >
+                <% } else { %>
+                <span
+                  class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200"
+                  >접수대기</span
+                >
+                <% } %>
+                <span class="text-xs text-slate-400 font-mono"
+                  ><%= ticket.createdAt %></span
+                >
+              </div>
+              <h2 class="text-base font-bold text-slate-800 truncate">
+                <%= ticket.title %>
+              </h2>
+            </div>
+
+            <!-- 토글 버튼 -->
+            <div class="flex-shrink-0 self-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-slate-300 group-hover:text-purple-500 transition-transform duration-300"
+                id="icon-<%= index %>"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 상세 내용 및 답변 (토글 영역) -->
+          <div
+            id="ans-<%= index %>"
+            class="hidden bg-slate-50/50 border-x border-b border-slate-200 rounded-b-2xl mx-2 -mt-2 p-6 pt-6 text-sm text-slate-600 transition-all duration-300"
+          >
+            <!-- 질문 -->
+            <div class="mb-6 relative pl-4 border-l-2 border-slate-200">
+              <p class="font-bold text-slate-800 mb-2">문의 내용</p>
+              <!-- [수정됨] whitespace-pre-wrap -> whitespace-pre-line 으로 변경하여 불필요한 공백 제거 -->
+              <p class="leading-relaxed whitespace-pre-line">
+                <%= ticket.content ? ticket.content.trim() : '' %>
+              </p>
+            </div>
+
+            <!-- 답변 -->
+            <% if (ticket.answer) { %>
+            <div
+              class="bg-purple-50/50 p-4 rounded-xl border border-purple-100 relative"
+            >
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-bold text-purple-700">관리자 답변</span>
+                <span class="text-xs text-purple-400"
+                  ><%= ticket.answeredAt %></span
+                >
+              </div>
+              <!-- [수정됨] whitespace-pre-wrap -> whitespace-pre-line 으로 변경 -->
+              <p class="text-slate-700 leading-relaxed whitespace-pre-line">
+                <%= ticket.answer.trim() %>
+              </p>
+            </div>
+            <% } else { %>
+            <div
+              class="bg-white p-4 rounded-xl border border-slate-100 border-dashed text-center text-slate-400 text-xs"
+            >
+              아직 답변이 등록되지 않았습니다.<br />조금만 기다려주세요.
+            </div>
+            <% } %>
+          </div>
+        </article>
+        <% }) %> <% } else { %>
+        <!-- 문의 없을 때 -->
+        <div
+          class="py-24 text-center bg-white rounded-3xl border border-slate-200 border-dashed flex flex-col items-center justify-center"
+        >
+          <span class="text-6xl mb-4 opacity-20">📭</span>
+          <p class="text-slate-500 font-medium mb-1">
+            작성된 문의 내역이 없습니다.
+          </p>
+          <p class="text-sm text-slate-400 mb-6">
+            궁금한 점이 있으시면 언제든 문의해주세요.
+          </p>
+          <a
+            href="/qna/write"
+            class="inline-flex items-center gap-2 text-white bg-purple-600 px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-200"
+          >
+            <span>✍️</span> 문의 작성하기
+          </a>
+        </div>
+        <% } %>
+      </section>
+
+      <!-- 모바일용 플로팅 작성 버튼 -->
+      <a
+        href="/qna/write"
+        class="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-purple-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl hover:scale-110 transition z-50"
+      >
+        +
+      </a>
+    </main>
+
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      function toggleAnswer(id) {
+        const el = document.getElementById(id);
+        const iconId = id.replace("ans-", "icon-");
+        const icon = document.getElementById(iconId);
+
+        if (el.classList.contains("hidden")) {
+          el.classList.remove("hidden");
+          icon.classList.add("rotate-180");
+        } else {
+          el.classList.add("hidden");
+          icon.classList.remove("rotate-180");
+        }
+      }
+    </script>
+  </body>
+</html>

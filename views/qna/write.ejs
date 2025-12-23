@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>문의 작성 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main class="flex-grow max-w-2xl mx-auto w-full px-6 py-12">
+      <!-- 상단 헤더 -->
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-bold text-slate-900">문의 작성</h1>
+        <a
+          href="/qna"
+          class="text-sm font-bold text-slate-400 hover:text-slate-600 transition flex items-center gap-1"
+        >
+          ✕ 닫기
+        </a>
+      </div>
+
+      <div
+        class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 md:p-10"
+      >
+        <form action="/qna/write" method="post" class="space-y-6">
+          <!-- 제목 입력 -->
+          <div class="space-y-2">
+            <label class="block text-sm font-bold text-slate-700">제목</label>
+            <input
+              type="text"
+              name="title"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition placeholder-slate-400"
+              placeholder="문의하실 내용을 요약해주세요"
+              required
+            />
+          </div>
+
+          <!-- 내용 입력 -->
+          <div class="space-y-2">
+            <label class="block text-sm font-bold text-slate-700">내용</label>
+            <textarea
+              name="content"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition placeholder-slate-400 resize-none leading-relaxed"
+              rows="8"
+              placeholder="상세한 문의 내용을 입력해주세요.&#13;&#10;주문번호를 함께 적어주시면 더 빠른 확인이 가능합니다."
+              required
+            ></textarea>
+          </div>
+
+          <!-- 하단 버튼 그룹 -->
+          <div class="pt-4 flex gap-3">
+            <a
+              href="/qna"
+              class="flex-1 rounded-xl border border-slate-300 text-slate-600 py-3.5 font-bold text-center hover:bg-slate-50 transition"
+            >
+              취소
+            </a>
+            <!-- [수정] 버튼 색상 변경 (slate-900 -> purple-600) -->
+            <button
+              type="submit"
+              class="flex-[2] rounded-xl bg-purple-600 text-white py-3.5 font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-200"
+            >
+              문의 접수하기
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-8 leading-relaxed">
+        접수된 문의는 관리자 확인 후 순차적으로 답변드립니다.<br />
+        답변 완료 시 내역에서 확인하실 수 있습니다.
+      </p>
+    </main>
+
+    <%- include('../partials/footer.ejs') %>
+  </body>
+</html>

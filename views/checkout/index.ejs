@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>결제 화면 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .modal {
+        transition: opacity 0.25s ease;
+      }
+      body.modal-active {
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main class="max-w-6xl mx-auto w-full px-6 py-12 space-y-8 flex-grow">
+      <header>
+        <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+          CHECKOUT
+        </p>
+        <h1 class="text-3xl font-bold">주문/결제</h1>
+        <p class="text-sm text-slate-500 mt-2">
+          주문 상품을 확인하고 배송지 및 결제 수단을 입력해주세요.
+        </p>
+      </header>
+
+      <div class="grid gap-8 lg:grid-cols-[1fr_380px]">
+        <!-- 왼쪽: 배송 정보 및 결제 수단 -->
+        <section class="space-y-6">
+          <article
+            class="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm space-y-6"
+          >
+            <div
+              class="flex justify-between items-center border-b border-slate-100 pb-4"
+            >
+              <h2 class="text-xl font-bold">배송 정보 입력</h2>
+              <button
+                onclick="loadRecentAddress()"
+                class="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition"
+              >
+                최근 배송 정보 불러오기
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 mb-1"
+                    >받는 사람</label
+                  >
+                  <input
+                    type="text"
+                    id="receiverName"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-purple-500 outline-none transition"
+                    placeholder="이름"
+                    value="<%= user.nickname %>"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 mb-1"
+                    >연락처</label
+                  >
+                  <input
+                    type="text"
+                    id="receiverPhone"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-purple-500 outline-none transition"
+                    placeholder="전화번호 (- 없이 입력)"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1"
+                  >주소</label
+                >
+                <input
+                  type="text"
+                  id="receiverAddress"
+                  class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-purple-500 outline-none transition mb-2"
+                  placeholder="기본 주소"
+                />
+                <input
+                  type="text"
+                  id="receiverAddressDetail"
+                  class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-purple-500 outline-none transition"
+                  placeholder="상세 주소"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1"
+                  >배송 요청사항</label
+                >
+                <textarea
+                  id="deliveryRequest"
+                  class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-purple-500 outline-none transition resize-none"
+                  rows="3"
+                  placeholder="예: 문 앞에 놓아주세요."
+                ></textarea>
+              </div>
+            </div>
+          </article>
+
+          <!-- 결제 수단 -->
+          <article
+            class="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm space-y-6"
+          >
+            <h2 class="text-xl font-bold border-b border-slate-100 pb-4">
+              결제 수단 선택
+            </h2>
+            <div class="grid gap-3">
+              <label
+                class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition"
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value="CARD"
+                  class="w-5 h-5 text-purple-600 accent-purple-600"
+                  checked
+                />
+                <span class="font-bold text-slate-700">신용/체크카드</span>
+              </label>
+              <label
+                class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition"
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value="BANK"
+                  class="w-5 h-5 text-purple-600 accent-purple-600"
+                />
+                <span class="font-bold text-slate-700">무통장 입금</span>
+              </label>
+              <label
+                class="flex items-center gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition"
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value="SIMPLE"
+                  class="w-5 h-5 text-purple-600 accent-purple-600"
+                />
+                <span class="font-bold text-slate-700"
+                  >간편 결제 (카카오페이/토스)</span
+                >
+              </label>
+            </div>
+          </article>
+        </section>
+
+        <!-- 오른쪽: 주문 정보 -->
+        <section class="space-y-6">
+          <!-- 주문 상품 목록 -->
+          <article
+            class="rounded-3xl bg-white border border-slate-200 p-6 shadow-sm"
+          >
+            <div
+              class="flex items-center justify-between mb-4 border-b border-slate-100 pb-4"
+            >
+              <!-- [수정] items 변수 사용 -->
+              <h2 class="text-lg font-bold">
+                주문 상품
+                <span class="text-purple-600"><%= items.length %></span>건
+              </h2>
+            </div>
+            <div
+              class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+            >
+              <% items.forEach(item => { %>
+              <div
+                class="flex gap-4 item-row"
+                data-code="<%= item.code %>"
+                data-price="<%= item.salePrice %>"
+                data-qty="<%= item.qty %>"
+              >
+                <div
+                  class="w-16 h-16 bg-gray-50 rounded-lg border border-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center"
+                >
+                  <% if (item.thumbnail) { %>
+                  <img
+                    src="<%= item.thumbnail %>"
+                    class="w-full h-full object-contain"
+                  />
+                  <% } else { %>
+                  <span class="text-xs text-slate-300">Img</span>
+                  <% } %>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold text-slate-800 truncate">
+                    <%= item.name %>
+                  </p>
+                  <div class="flex justify-between items-center mt-1">
+                    <span class="text-xs text-slate-500"
+                      >수량 <%= item.qty %>개</span
+                    >
+                    <span class="text-sm font-bold text-slate-900"
+                      ><%= item.totalPrice.toLocaleString() %>원</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+          </article>
+
+          <!-- 쿠폰 및 금액 -->
+          <article
+            class="rounded-3xl bg-white border border-slate-200 p-6 shadow-sm space-y-4 sticky top-6"
+          >
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-700">할인 쿠폰</label>
+              <div
+                class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200"
+              >
+                <div class="flex-1 min-w-0 mr-2">
+                  <span
+                    id="selectedCouponName"
+                    class="text-sm text-slate-500 block truncate"
+                    >선택된 쿠폰 없음</span
+                  >
+                </div>
+                <button
+                  onclick="openCouponModal()"
+                  class="text-xs font-bold text-purple-600 bg-white border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-50 transition whitespace-nowrap"
+                >
+                  쿠폰 선택 >
+                </button>
+              </div>
+              <input type="hidden" id="selectedCouponCode" value="" />
+            </div>
+
+            <hr class="border-slate-100" />
+
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-500">총 상품 금액</span>
+                <!-- [수정] summary 변수 사용 -->
+                <span class="font-bold"
+                  ><%= summary.totalPrice.toLocaleString() %>원</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">상품 할인</span>
+                <span class="font-bold text-rose-500"
+                  >-<%= summary.totalDiscount.toLocaleString() %>원</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">쿠폰 할인</span>
+                <span class="font-bold text-rose-500" id="couponDiscountDisplay"
+                  >-0원</span
+                >
+              </div>
+            </div>
+
+            <div
+              class="border-t border-slate-100 pt-4 flex items-center justify-between"
+            >
+              <span class="text-lg font-bold text-slate-800"
+                >최종 결제 금액</span
+              >
+              <span
+                class="text-2xl font-extrabold text-purple-600"
+                id="finalPriceDisplay"
+                ><%= summary.finalPrice.toLocaleString() %>원</span
+              >
+            </div>
+
+            <button
+              onclick="processPayment()"
+              class="w-full rounded-2xl bg-slate-900 text-white py-4 font-bold text-lg hover:bg-purple-600 transition shadow-lg shadow-purple-100"
+            >
+              결제하기
+            </button>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <!-- 쿠폰 선택 모달 -->
+    <div
+      id="couponModal"
+      class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-white w-11/12 md:max-w-md mx-auto rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]"
+      >
+        <div
+          class="p-5 border-b border-gray-100 flex justify-between items-center"
+        >
+          <h3 class="text-lg font-bold text-gray-800">쿠폰 선택</h3>
+          <button
+            onclick="closeCouponModal()"
+            class="text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
+          <!-- 선택 안함 -->
+          <div
+            onclick="selectCoupon(null)"
+            class="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-purple-500 transition shadow-sm group"
+          >
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-600 group-hover:text-purple-600"
+                >쿠폰 적용 안함</span
+              >
+              <div
+                class="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-purple-500 flex items-center justify-center"
+              ></div>
+            </div>
+          </div>
+
+          <% if (typeof coupons !== 'undefined' && coupons && coupons.length >
+          0) { %> <% coupons.forEach(c => { %>
+          <div
+            onclick="selectCoupon('<%= c.code %>', '<%= c.name %>', '<%= c.rate ? 'RATE' : 'AMOUNT' %>', '<%= c.amount %>', '<%= c.rate %>', '<%= c.maxAmount %>')"
+            class="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:border-purple-500 transition shadow-sm group relative overflow-hidden"
+          >
+            <div class="flex justify-between items-center relative z-10">
+              <div>
+                <p
+                  class="text-sm font-bold text-gray-800 group-hover:text-purple-700"
+                >
+                  <%= c.name %>
+                </p>
+                <p class="text-xs text-rose-500 font-bold mt-1">
+                  <% if(c.rate) { %> <%= c.rate %>% 할인 <% if(c.maxAmount) {
+                  %><span class="text-slate-400 font-normal ml-1"
+                    >(최대 <%= c.maxAmount.toLocaleString() %>원)</span
+                  ><% } %> <% } else { %> <%= c.amount.toLocaleString() %>원
+                  할인 <% } %>
+                </p>
+              </div>
+            </div>
+          </div>
+          <% }) %> <% } else { %>
+          <div class="py-8 text-center text-slate-400">
+            사용 가능한 쿠폰이 없습니다.
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      const basePrice = <%= summary.finalPrice %>;
+      let currentCouponDiscount = 0;
+      let selectedCouponCode = null;
+
+      // [수정] fromCart 변수 안전하게 전달
+      const isFromCart = <%= typeof fromCart !== 'undefined' ? fromCart : false %>;
+
+      function openCouponModal() {
+          document.getElementById('couponModal').classList.remove('hidden');
+          document.getElementById('couponModal').classList.add('flex');
+          document.body.classList.add('modal-active');
+      }
+
+      function closeCouponModal() {
+          document.getElementById('couponModal').classList.add('hidden');
+          document.getElementById('couponModal').classList.remove('flex');
+          document.body.classList.remove('modal-active');
+      }
+
+      function selectCoupon(code, name, type, amount, rate, max) {
+          const nameDisplay = document.getElementById('selectedCouponName');
+          const codeInput = document.getElementById('selectedCouponCode');
+
+          if (!code) {
+              nameDisplay.innerText = "선택된 쿠폰 없음";
+              nameDisplay.classList.add('text-slate-500');
+              nameDisplay.classList.remove('text-purple-600', 'font-bold');
+              codeInput.value = "";
+              currentCouponDiscount = 0;
+          } else {
+              nameDisplay.innerText = name;
+              nameDisplay.classList.remove('text-slate-500');
+              nameDisplay.classList.add('text-purple-600', 'font-bold');
+              codeInput.value = code;
+
+              if (type === 'AMOUNT') {
+                  currentCouponDiscount = parseInt(amount);
+              } else {
+                  let discount = Math.floor(basePrice * (parseInt(rate) / 100));
+                  const maxLimit = parseInt(max);
+                  if (maxLimit && discount > maxLimit) discount = maxLimit;
+                  currentCouponDiscount = discount;
+              }
+          }
+
+          document.getElementById('couponDiscountDisplay').innerText = '-' + currentCouponDiscount.toLocaleString() + '원';
+          const final = basePrice - currentCouponDiscount;
+          document.getElementById('finalPriceDisplay').innerText = (final > 0 ? final : 0).toLocaleString() + '원';
+          closeCouponModal();
+      }
+
+      async function loadRecentAddress() {
+        try {
+          const res = await fetch('/checkout/recent-address');
+          const data = await res.json();
+          if (data.success) {
+            if (data.address) document.getElementById('receiverAddress').value = data.address;
+            if (data.addressDetail) document.getElementById('receiverAddressDetail').value = data.addressDetail;
+            if (data.receiverName) document.getElementById('receiverName').value = data.receiverName;
+            if (data.phone) document.getElementById('receiverPhone').value = data.phone;
+            if (data.request) document.getElementById('deliveryRequest').value = data.request;
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      async function processPayment() {
+        const receiverName = document.getElementById('receiverName').value;
+        const receiverPhone = document.getElementById('receiverPhone').value;
+        const address = document.getElementById('receiverAddress').value;
+        const addressDetail = document.getElementById('receiverAddressDetail').value;
+        const request = document.getElementById('deliveryRequest').value;
+        const couponCode = document.getElementById('selectedCouponCode').value;
+
+        if(!receiverName || !receiverPhone || !address) {
+          return alert("배송 정보를 입력해주세요.");
+        }
+
+        if(!confirm("결제를 진행하시겠습니까?")) return;
+
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+            items.push({
+                code: row.dataset.code,
+                price: parseInt(row.dataset.price),
+                qty: parseInt(row.dataset.qty)
+            });
+        });
+
+        const payload = {
+            receiverName, receiverPhone, address, addressDetail, request,
+            items: items,
+            couponCode: couponCode || null,
+            finalAmount: basePrice - currentCouponDiscount,
+            fromCart: isFromCart
+        };
+
+        try {
+            const res = await fetch('/checkout/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if(data.success) {
+                alert("주문이 완료되었습니다.");
+                location.href = '/mypage/orders';
+            } else {
+                alert("주문 실패: " + data.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("통신 오류 발생");
+        }
+      }
+    </script>
+  </body>
+</html>

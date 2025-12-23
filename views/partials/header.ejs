@@ -1,0 +1,306 @@
+<header class="bg-white border-b border-slate-200 relative z-40">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex items-center justify-end text-xs text-slate-500 py-1">
+      <div class="flex items-center gap-3">
+        <% if (typeof user !== 'undefined' && user) { %>
+        <span class="font-bold text-purple-700 mr-1"
+          ><%= user.nickname %>님</span
+        >
+        <% if (user.status === 'ADMIN') { %>
+        <a
+          href="/admin/dashboard"
+          class="hover:text-purple-600 transition-colors font-bold text-slate-600"
+          >관리자 페이지</a
+        >
+        <span class="text-slate-300">|</span>
+        <% } %>
+        <a href="/logout" class="hover:text-purple-600 transition-colors"
+          >로그아웃</a
+        >
+        <% } else { %>
+        <a href="/login" class="hover:text-purple-600 transition-colors"
+          >로그인</a
+        >
+        <a href="/register" class="hover:text-purple-600 transition-colors"
+          >회원가입</a
+        >
+        <% } %>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 pb-0 relative">
+      <div class="flex items-center gap-4">
+        <!-- 카테고리 버튼 -->
+        <div class="relative group">
+          <button
+            type="button"
+            id="categoryBtn"
+            class="flex h-20 w-32 flex-col items-center justify-center border border-purple-500 bg-purple-500 text-white text-sm font-bold tracking-widest hover:bg-purple-600 transition"
+            onclick="toggleCategoryMenu()"
+          >
+            <span class="text-xl mb-0.5">☰</span>
+            카테고리
+          </button>
+
+          <div
+            id="categoryMenu"
+            class="absolute top-full left-0 w-[600px] bg-white border border-slate-200 shadow-xl rounded-b-lg hidden flex-col z-50 animate-fade-in-down"
+          >
+            <div class="p-4 border-b border-slate-100">
+              <h3
+                class="text-xs font-bold text-purple-600 mb-3 uppercase tracking-wider"
+              >
+                Platform (기기)
+              </h3>
+              <ul class="grid grid-cols-4 gap-2">
+                <% if (typeof common !== 'undefined' && common &&
+                common.devices) { %> <% common.devices.forEach(device => { %>
+                <li>
+                  <a
+                    href="/products?device=<%= device.code %>"
+                    class="block text-center text-slate-600 hover:text-purple-600 hover:bg-purple-50 px-2 py-2 rounded transition text-sm truncate border border-slate-50 hover:border-purple-100"
+                    ><%= device.name %></a
+                  >
+                </li>
+                <% }) %> <% } %>
+              </ul>
+            </div>
+            <div class="p-4">
+              <h3
+                class="text-xs font-bold text-purple-600 mb-3 uppercase tracking-wider"
+              >
+                Genre (장르)
+              </h3>
+              <ul class="grid grid-cols-4 gap-2">
+                <% if (typeof common !== 'undefined' && common &&
+                common.categories) { %> <% common.categories.forEach(cate => {
+                %>
+                <li>
+                  <a
+                    href="/products?category=<%= cate.code %>"
+                    class="block text-center text-slate-600 hover:text-purple-600 hover:bg-purple-50 px-2 py-2 rounded transition text-sm truncate border border-slate-50 hover:border-purple-100"
+                    ><%= cate.name %></a
+                  >
+                </li>
+                <% }) %> <% } %>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <a href="/" class="flex items-center">
+          <img
+            src="/images/logo.png"
+            alt="EaGCart 로고"
+            class="h-20 w-auto object-contain"
+          />
+        </a>
+      </div>
+
+      <!-- 검색창 영역 -->
+      <div class="flex-1 relative z-50">
+        <input
+          type="text"
+          id="mainSearchInput"
+          placeholder="상품명으로 검색해보세요"
+          class="w-full rounded-full border border-slate-200 bg-slate-50 px-6 py-3 pr-14 text-base focus:border-purple-400 focus:bg-white focus:outline-none transition"
+          autocomplete="off"
+        />
+        <button
+          type="button"
+          id="mainSearchBtn"
+          class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 text-xl hover:text-purple-600 transition cursor-pointer"
+        >
+          ⌕
+        </button>
+        <div
+          id="mainSearchResult"
+          class="absolute top-full left-0 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl hidden overflow-hidden"
+        >
+          <ul
+            id="mainSearchList"
+            class="divide-y divide-slate-100 max-h-[400px] overflow-y-auto custom-scrollbar"
+          ></ul>
+        </div>
+      </div>
+
+      <!-- 우측 메뉴 -->
+      <nav
+        class="flex items-center gap-6 text-xs font-bold text-slate-500 tracking-wider uppercase"
+      >
+        <a
+          href="/mypage/orders"
+          class="hover:text-purple-600 flex flex-col items-center gap-1 transition-colors"
+        >
+          <!-- [수정] 이모지 -> 이미지 아이콘 (w-8 h-8) -->
+          <div class="w-8 h-8">
+            <img
+              src="/images/icons/mypage_icon.png"
+              alt="마이페이지"
+              class="w-full h-full object-contain"
+              onerror="this.src='https://placehold.co/32x32?text=My'"
+            />
+          </div>
+          마이페이지
+        </a>
+        <a
+          href="/qna"
+          class="hover:text-purple-600 flex flex-col items-center gap-1 transition-colors"
+        >
+          <!-- [수정] 이모지 -> 이미지 아이콘 (w-8 h-8) -->
+          <div class="w-8 h-8">
+            <img
+              src="/images/icons/qna_icon.png"
+              alt="고객문의"
+              class="w-full h-full object-contain"
+              onerror="this.src='https://placehold.co/32x32?text=QnA'"
+            />
+          </div>
+          고객문의
+        </a>
+        <a
+          href="/cart"
+          class="hover:text-purple-600 flex flex-col items-center gap-1 relative transition-colors"
+        >
+          <!-- [수정] 이모지 -> 이미지 아이콘 (w-8 h-8) -->
+          <div class="w-8 h-8">
+            <img
+              src="/images/icons/cart_icon.png"
+              alt="장바구니"
+              class="w-full h-full object-contain"
+              onerror="this.src='https://placehold.co/32x32?text=Cart'"
+            />
+          </div>
+          장바구니
+          <span
+            id="cartBadge"
+            class="absolute -top-1 -right-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] text-white leading-none hidden"
+            >0</span
+          >
+        </a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  function toggleCategoryMenu() {
+    const menu = document.getElementById("categoryMenu");
+    menu.classList.toggle("hidden");
+    menu.classList.toggle("flex");
+  }
+  document.addEventListener("click", function (e) {
+    const btn = document.getElementById("categoryBtn");
+    const menu = document.getElementById("categoryMenu");
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.add("hidden");
+      menu.classList.remove("flex");
+    }
+  });
+
+  const searchInput = document.getElementById("mainSearchInput");
+  const searchResult = document.getElementById("mainSearchResult");
+  const searchList = document.getElementById("mainSearchList");
+  const searchBtn = document.getElementById("mainSearchBtn");
+
+  function executeSearch() {
+    const query = searchInput.value.trim();
+    if (query.length > 0) {
+      location.href = `/products?q=${encodeURIComponent(query)}`;
+    } else {
+      alert("검색어를 입력해주세요.");
+    }
+  }
+  searchInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") executeSearch();
+  });
+  if (searchBtn) searchBtn.addEventListener("click", executeSearch);
+
+  let debounceTimeout;
+  searchInput.addEventListener("input", function () {
+    const query = this.value.trim();
+    if (query.length < 1) {
+      searchResult.classList.add("hidden");
+      return;
+    }
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        searchList.innerHTML = "";
+
+        if (data.success && data.products.length > 0) {
+          searchResult.classList.remove("hidden");
+
+          data.products.forEach((prod) => {
+            const li = document.createElement("li");
+            const isSoldOut = prod.status === "품절"; // 품절 여부 확인
+
+            // [수정] 품절이면 스타일 변경 (흐리게, 커서 금지)
+            li.className = isSoldOut
+              ? "px-6 py-3 bg-gray-50 flex justify-between items-center gap-4 cursor-not-allowed opacity-60"
+              : "px-6 py-3 hover:bg-purple-50 cursor-pointer flex justify-between items-center gap-4 transition group";
+
+            const originalPrice = parseInt(prod.price).toLocaleString() + "원";
+            let priceHtml = "";
+
+            if (isSoldOut) {
+              // [수정] 품절 텍스트 표시
+              priceHtml = `<span class="text-xs font-bold text-white bg-gray-400 px-2 py-1 rounded">품절</span>`;
+            } else if (prod.salePrice) {
+              const salePrice =
+                parseInt(prod.salePrice).toLocaleString() + "원";
+              priceHtml = `<div class="text-right"><span class="text-sm font-bold text-rose-600 mr-1">${salePrice}</span><span class="text-xs text-gray-400 line-through">${originalPrice}</span></div>`;
+            } else {
+              priceHtml = `<span class="text-sm font-bold text-gray-700 group-hover:text-purple-700">${originalPrice}</span>`;
+            }
+
+            li.innerHTML = `<div class="flex-1 min-w-0"><span class="text-sm font-bold text-gray-800 ${
+              !isSoldOut ? "group-hover:text-purple-700" : ""
+            } truncate block">${prod.name}</span></div>${priceHtml}`;
+
+            // [수정] 품절이 아닐 때만 클릭 이벤트 추가
+            if (!isSoldOut) {
+              li.addEventListener("click", () => {
+                location.href = `/product/detail?id=${prod.code}`;
+              });
+            }
+
+            searchList.appendChild(li);
+          });
+        } else {
+          searchList.innerHTML =
+            '<li class="px-5 py-8 text-center text-sm text-gray-400">검색 결과가 없습니다.</li>';
+          searchResult.classList.remove("hidden");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }, 300);
+  });
+  document.addEventListener("click", function (e) {
+    if (
+      !searchInput.contains(e.target) &&
+      !searchResult.contains(e.target) &&
+      e.target !== searchBtn
+    ) {
+      searchResult.classList.add("hidden");
+    }
+  });
+
+  async function updateCartBadge() {
+    try {
+      const res = await fetch("/cart/count");
+      const data = await res.json();
+      const badge = document.getElementById("cartBadge");
+      if (data.success && data.count > 0) {
+        badge.innerText = data.count;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("DOMContentLoaded", updateCartBadge);
+</script>

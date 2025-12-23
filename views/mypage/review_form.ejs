@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>리뷰 작성 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .star-rating input {
+        display: none;
+      }
+      .star-rating label {
+        color: #ddd;
+        cursor: pointer;
+        font-size: 2rem;
+        transition: color 0.2s;
+      }
+      .star-rating input:checked ~ label,
+      .star-rating:not(:checked) > label:hover,
+      .star-rating:not(:checked) > label:hover ~ label {
+        color: #fbbf24;
+      }
+      .star-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <%- include('../partials/header.ejs') %>
+
+    <main
+      class="max-w-7xl mx-auto w-full px-6 py-12 grid gap-8 lg:grid-cols-[260px_1fr] flex-grow"
+    >
+      <%- include('./partials/nav.ejs', { activeTab: 'orders' }) %>
+
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs uppercase tracking-[0.4em] text-slate-400 mb-2">
+            주문 목록 / 리뷰
+          </p>
+          <h1 class="text-3xl font-bold">리뷰 작성</h1>
+          <p class="text-sm text-slate-500 mt-2">
+            구매하신 상품에 대한 소중한 후기를 남겨주세요.
+          </p>
+        </header>
+
+        <form
+          action="/mypage/reviews/write"
+          method="POST"
+          enctype="multipart/form-data"
+          class="max-w-2xl"
+          onsubmit="return validateReviewForm()"
+        >
+          <input type="hidden" name="orderCode" value="<%= orderCode %>" />
+          <input type="hidden" name="productCode" value="<%= product.code %>" />
+
+          <div
+            class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-8"
+          >
+            <div class="flex items-center gap-4 border-b border-slate-100 pb-6">
+              <div
+                class="w-20 h-20 bg-gray-50 border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
+              >
+                <% if (product.image) { %>
+                <img
+                  src="<%= product.image %>"
+                  class="w-full h-full object-contain"
+                />
+                <% } else { %>
+                <span class="text-xs text-slate-300">No Img</span>
+                <% } %>
+              </div>
+              <div>
+                <p class="font-bold text-lg text-slate-800">
+                  <%= product.name %>
+                </p>
+                <p class="text-sm text-slate-400 font-mono mt-1">
+                  <%= product.code %>
+                </p>
+              </div>
+            </div>
+
+            <!-- 별점 입력 (선택 사항) -->
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2"
+                >별점
+                <span class="text-xs font-normal text-slate-400"
+                  >(선택)</span
+                ></label
+              >
+              <div
+                class="star-rating gap-1 justify-center py-4 bg-slate-50 rounded-xl border border-slate-100"
+              >
+                <input type="radio" id="star5" name="rating" value="5" /><label
+                  for="star5"
+                  >★</label
+                >
+                <input type="radio" id="star4" name="rating" value="4" /><label
+                  for="star4"
+                  >★</label
+                >
+                <input type="radio" id="star3" name="rating" value="3" /><label
+                  for="star3"
+                  >★</label
+                >
+                <input type="radio" id="star2" name="rating" value="2" /><label
+                  for="star2"
+                  >★</label
+                >
+                <input type="radio" id="star1" name="rating" value="1" /><label
+                  for="star1"
+                  >★</label
+                >
+              </div>
+            </div>
+
+            <!-- [신규] 제목 입력 -->
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2"
+                >제목</label
+              >
+              <input
+                type="text"
+                id="reviewTitle"
+                name="title"
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-500 text-sm"
+                placeholder="제목을 입력해주세요."
+              />
+            </div>
+
+            <!-- 내용 입력 -->
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2"
+                >리뷰 내용</label
+              >
+              <textarea
+                name="content"
+                id="reviewContent"
+                rows="6"
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-purple-500 text-sm resize-none"
+                placeholder="상품에 대한 자세한 후기를 남겨주세요. (최소 10자 이상)"
+              ></textarea>
+            </div>
+
+            <!-- 이미지 첨부 -->
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2">
+                사진 첨부
+                <span class="text-xs font-normal text-slate-400"
+                  >(선택, 최대 3장)</span
+                >
+              </label>
+              <div class="flex gap-4 items-start">
+                <input
+                  type="file"
+                  id="reviewImages"
+                  name="reviewImages"
+                  multiple
+                  accept="image/png, image/jpeg"
+                  class="hidden"
+                  onchange="previewImages(this)"
+                />
+
+                <label
+                  for="reviewImages"
+                  class="w-20 h-20 flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition text-slate-400"
+                >
+                  <span class="text-2xl">+</span>
+                  <span class="text-[10px]">사진 추가</span>
+                </label>
+
+                <div id="imagePreview" class="flex gap-2 flex-wrap"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-6">
+            <a
+              href="/mypage/orders"
+              class="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition"
+              >취소</a
+            >
+            <button
+              type="submit"
+              class="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition shadow-md"
+            >
+              등록하기
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      function validateReviewForm() {
+        const title = document.getElementById("reviewTitle").value;
+        const content = document.getElementById("reviewContent").value;
+        const files = document.getElementById("reviewImages").files;
+
+        // [수정] 별점 검사 제거 (0점 허용)
+
+        // 제목 검사
+        if (!title || title.trim() === "") {
+          alert("제목을 입력해주세요.");
+          return false;
+        }
+
+        // 내용 길이 검사
+        if (content.trim().length < 10) {
+          alert("리뷰 내용은 최소 10자 이상 입력해주세요.");
+          return false;
+        }
+
+        // 파일 개수 검사
+        if (files.length > 3) {
+          alert("사진은 최대 3장까지만 첨부 가능합니다.");
+          return false;
+        }
+
+        return true;
+      }
+
+      function previewImages(input) {
+        const container = document.getElementById("imagePreview");
+        container.innerHTML = "";
+
+        if (input.files && input.files.length > 0) {
+          if (input.files.length > 3) {
+            alert("최대 3장까지만 선택 가능합니다.");
+            input.value = "";
+            return;
+          }
+
+          Array.from(input.files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const imgDiv = document.createElement("div");
+              imgDiv.className =
+                "w-20 h-20 rounded-xl border border-slate-200 overflow-hidden relative bg-white";
+              imgDiv.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+              container.appendChild(imgDiv);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+    </script>
+  </body>
+</html>

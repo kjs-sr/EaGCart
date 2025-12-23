@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 대시보드 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen font-sans">
+    <div class="flex">
+      <%- include('./partials/sidebar.ejs', { active: active }) %>
+
+      <main class="flex-1 p-8 space-y-8 overflow-y-auto h-screen">
+        <!-- 페이지 타이틀 -->
+        <h2
+          class="text-3xl font-bold text-slate-800 mb-8 border-b border-slate-200 pb-4"
+        >
+          대시보드
+        </h2>
+
+        <!-- 1. 상단 '오늘' 현황 카드 -->
+        <section
+          class="rounded-[2.5rem] bg-purple-50 border border-purple-100 overflow-hidden flex flex-col md:flex-row shadow-sm"
+        >
+          <!-- 왼쪽: 날짜 정보 -->
+          <div
+            class="md:w-1/4 bg-purple-100/50 p-8 flex flex-col justify-center items-center text-center border-r border-purple-200/50"
+          >
+            <h2 class="text-xl font-medium text-slate-600 mb-1">오늘</h2>
+            <p class="text-sm text-slate-400 mb-4">
+              <%= admin.ui.timeString %>
+            </p>
+            <p class="text-3xl font-bold text-purple-900">
+              <%= admin.dashboard.today.date %>
+            </p>
+          </div>
+
+          <!-- 오른쪽: 2x2 현황 그리드 -->
+          <div class="md:w-3/4 grid grid-cols-1 md:grid-cols-2">
+            <!-- ① 주문 -->
+            <% const todayObj = new Date(); const tYear =
+            todayObj.getFullYear(); const tMonth = String(todayObj.getMonth() +
+            1).padStart(2, '0'); const tDay =
+            String(todayObj.getDate()).padStart(2, '0'); const todayStr =
+            `${tYear}-${tMonth}-${tDay}`; %>
+            <a
+              href="/admin/sales?startDate=<%= todayStr %>&endDate=<%= todayStr %>&period=day"
+              class="block p-8 border-b md:border-b-0 md:border-r border-purple-200/50 flex items-center gap-6 hover:bg-purple-100/30 transition cursor-pointer"
+            >
+              <!-- [수정] 확장자 .png로 변경 -->
+              <div class="w-16 h-16 flex-shrink-0">
+                <img
+                  src="/images/icons/order_icon.png"
+                  alt="주문 아이콘"
+                  class="w-full h-full object-contain"
+                  onerror="this.src='https://placehold.co/64x64?text=Order'"
+                />
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-500 mb-1">
+                  주문
+                  <span class="font-normal text-xs"
+                    >(<%= admin.dashboard.today.orderCount.toLocaleString()
+                    %>건)</span
+                  >
+                </p>
+                <p class="text-3xl font-bold text-slate-800">
+                  <%= admin.dashboard.today.revenue %>원
+                </p>
+              </div>
+            </a>
+
+            <!-- ② 배송 -->
+            <a
+              href="/admin/delivery"
+              class="block p-8 border-b md:border-b-0 border-purple-200/50 flex items-center gap-6 hover:bg-purple-100/30 transition cursor-pointer"
+            >
+              <!-- [수정] 확장자 .png로 변경 -->
+              <div class="w-16 h-16 flex-shrink-0">
+                <img
+                  src="/images/icons/delivery_icon.png"
+                  alt="배송 아이콘"
+                  class="w-full h-full object-contain"
+                  onerror="this.src='https://placehold.co/64x64?text=Delivery'"
+                />
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-500 mb-1">배송</p>
+                <p class="text-3xl font-bold text-slate-800">
+                  <%= admin.dashboard.today.pendingDelivery.toLocaleString()
+                  %>건
+                  <span class="text-lg font-medium text-slate-400">대기중</span>
+                </p>
+              </div>
+            </a>
+
+            <!-- ③ 재고 -->
+            <a
+              href="/admin/inventory"
+              class="block p-8 md:border-r border-t border-purple-200/50 flex items-center gap-6 hover:bg-purple-100/30 transition cursor-pointer"
+            >
+              <!-- [수정] 확장자 .png로 변경 -->
+              <div class="w-16 h-16 flex-shrink-0">
+                <img
+                  src="/images/icons/stock_icon.png"
+                  alt="재고 아이콘"
+                  class="w-full h-full object-contain"
+                  onerror="this.src='https://placehold.co/64x64?text=Stock'"
+                />
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-500 mb-1">재고 부족</p>
+                <p class="text-3xl font-bold text-slate-800">
+                  <%= admin.dashboard.today.stockAlert.toLocaleString() %>건
+                </p>
+              </div>
+            </a>
+
+            <!-- ④ 문의 -->
+            <a
+              href="/admin/inquiries"
+              class="block p-8 border-t border-purple-200/50 flex items-center gap-6 hover:bg-purple-100/30 transition cursor-pointer"
+            >
+              <!-- [수정] 확장자 .png로 변경 -->
+              <div class="w-16 h-16 flex-shrink-0">
+                <img
+                  src="/images/icons/inquiry_icon.png"
+                  alt="문의 아이콘"
+                  class="w-full h-full object-contain"
+                  onerror="this.src='https://placehold.co/64x64?text=QnA'"
+                />
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-500 mb-1">문의</p>
+                <p class="text-3xl font-bold text-slate-800">
+                  <%= admin.dashboard.today.pendingInquiry.toLocaleString() %>건
+                  <span class="text-lg font-medium text-slate-400">대기중</span>
+                </p>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <!-- 2. 반품/교환/취소 현황 섹션 -->
+        <section
+          class="bg-purple-50 rounded-[2.5rem] py-10 px-8 shadow-sm border border-purple-100 flex justify-around items-center divide-x divide-purple-200"
+        >
+          <!-- 반품 -->
+          <div class="flex-1 flex items-center justify-start gap-5 pl-12">
+            <!-- [수정] 확장자 .png로 변경 -->
+            <div class="w-16 h-16 flex-shrink-0">
+              <img
+                src="/images/icons/return_icon.png"
+                alt="반품 아이콘"
+                class="w-full h-full object-contain"
+                onerror="this.src='https://placehold.co/64x64?text=Return'"
+              />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-base font-bold text-slate-500 mb-0.5"
+                >반품</span
+              >
+              <span class="text-3xl font-extrabold text-slate-800"
+                ><%= admin.dashboard.claims.return.toLocaleString() %>건</span
+              >
+            </div>
+          </div>
+
+          <!-- 교환 -->
+          <div class="flex-1 flex items-center justify-start gap-5 pl-12">
+            <!-- [수정] 확장자 .png로 변경 -->
+            <div class="w-16 h-16 flex-shrink-0">
+              <img
+                src="/images/icons/exchange_icon.png"
+                alt="교환 아이콘"
+                class="w-full h-full object-contain"
+                onerror="this.src='https://placehold.co/64x64?text=Exchange'"
+              />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-base font-bold text-slate-500 mb-0.5"
+                >교환</span
+              >
+              <span class="text-3xl font-extrabold text-slate-800"
+                ><%= admin.dashboard.claims.exchange.toLocaleString() %>건</span
+              >
+            </div>
+          </div>
+
+          <!-- 취소 -->
+          <div class="flex-1 flex items-center justify-start gap-5 pl-12">
+            <!-- [수정] 확장자 .png로 변경 -->
+            <div class="w-16 h-16 flex-shrink-0">
+              <img
+                src="/images/icons/cancel_icon.png"
+                alt="취소 아이콘"
+                class="w-full h-full object-contain"
+                onerror="this.src='https://placehold.co/64x64?text=Cancel'"
+              />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-base font-bold text-slate-500 mb-0.5"
+                >취소</span
+              >
+              <span class="text-3xl font-extrabold text-slate-800"
+                ><%= admin.dashboard.claims.cancel.toLocaleString() %>건</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 하단 차트 영역 -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- 차트 1: 순이익 -->
+          <article
+            class="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100"
+          >
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-bold text-rose-500">순이익</h3>
+              <p class="text-xs text-slate-400 mb-2">
+                <%= admin.ui.currentMonth %>
+              </p>
+              <p class="text-3xl font-bold <%= admin.ui.profitClass %>">
+                <%= admin.ui.profitText %>
+              </p>
+            </div>
+            <div class="relative h-96 w-full">
+              <canvas id="netProfitChart"></canvas>
+            </div>
+          </article>
+
+          <!-- 차트 2: 기기별 판매량 -->
+          <article
+            class="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100"
+          >
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-bold text-rose-500">기기별 판매량</h3>
+              <p class="text-xs text-slate-400">최근 30일 기준</p>
+            </div>
+            <div class="relative h-80 w-full flex justify-center">
+              <canvas id="deviceChart"></canvas>
+            </div>
+          </article>
+
+          <!-- 차트 3: 카테고리별 판매량 -->
+          <article
+            class="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100"
+          >
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-bold text-rose-500">카테고리별 판매량</h3>
+              <p class="text-xs text-slate-400">최근 30일 기준</p>
+            </div>
+            <div class="relative h-80 w-full flex justify-center">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const netData = <%- JSON.stringify(admin.dashboard.charts.netProfit || { revenue: 0, cost: 0 }) %>;
+      const deviceData = <%- JSON.stringify(admin.dashboard.charts.devices || { labels: [], data: [] }) %>;
+      const categoryData = <%- JSON.stringify(admin.dashboard.charts.categories || { labels: [], data: [] }) %>;
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } }
+        },
+        layout: {
+            padding: 10
+        }
+      };
+
+      // 1. 순이익 차트
+      new Chart(document.getElementById('netProfitChart'), {
+        type: 'bar',
+        data: {
+          labels: ['매출액', '매출원가'],
+          datasets: [{
+            axis: 'y',
+            data: [netData.revenue, netData.cost],
+            backgroundColor: ['#818cf8', '#a78bfa'],
+            borderRadius: 8,
+            barThickness: 50
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false, grid: { display: false } },
+            y: {
+                grid: { display: false },
+                ticks: { font: { size: 15, weight: 'bold' }, color: '#475569' }
+            }
+          }
+        }
+      });
+
+      // 2. 기기별 차트
+      new Chart(document.getElementById('deviceChart'), {
+        type: 'doughnut',
+        data: {
+          labels: deviceData.labels,
+          datasets: [{
+            data: deviceData.data,
+            backgroundColor: [
+              '#818cf8', '#a78bfa', '#c4b5fd', '#d8b4fe', '#f0abfc',
+              '#e879f9', '#c084fc', '#a855f7', '#7e22ce', '#6b21a8'
+            ],
+            borderWidth: 0,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+            ...commonOptions,
+            cutout: '60%'
+        }
+      });
+
+      // 3. 카테고리별 차트
+      new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+          labels: categoryData.labels,
+          datasets: [{
+            data: categoryData.data,
+            backgroundColor: [
+              '#5b21b6', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd',
+              '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff'
+            ],
+            borderWidth: 0,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+            ...commonOptions,
+            cutout: '60%'
+        }
+      });
+    </script>
+  </body>
+</html>

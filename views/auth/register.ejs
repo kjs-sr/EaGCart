@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입 | EaGCart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col">
+    <main class="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <!-- ... (상단 로고 및 폼 UI는 기존과 동일) ... -->
+      <div class="mb-8">
+        <a href="/" class="hover:opacity-80 transition-opacity">
+          <img
+            src="/images/logo.png"
+            alt="EaGCart 로고"
+            class="h-28 w-auto object-contain"
+          />
+        </a>
+      </div>
+
+      <section
+        class="w-full max-w-xl bg-white rounded-3xl shadow-xl p-8 sm:p-10"
+      >
+        <h1 class="text-2xl font-bold text-slate-800 text-center mb-8">
+          회원가입
+        </h1>
+
+        <div class="space-y-5">
+          <!-- 아이디 -->
+          <div class="flex flex-col gap-1">
+            <div class="flex gap-3">
+              <input
+                type="text"
+                id="userId"
+                placeholder="아이디 (5~20자, 영문+숫자)"
+                oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')"
+                class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+              />
+              <button
+                onclick="checkDuplicate('id')"
+                class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+              >
+                중복확인
+              </button>
+            </div>
+            <p class="text-xs text-slate-400 pl-2">
+              * 5~20자의 영문 소문자와 숫자만 사용 가능
+            </p>
+          </div>
+
+          <!-- 닉네임 -->
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="nickname"
+              placeholder="닉네임 (이름)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            <button
+              onclick="checkDuplicate('nickname')"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              중복확인
+            </button>
+          </div>
+
+          <!-- 비밀번호 -->
+          <div class="space-y-3">
+            <input
+              type="password"
+              id="password"
+              placeholder="비밀번호 (8~20자, 특수문자 포함)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            <input
+              type="password"
+              id="passwordConfirm"
+              placeholder="비밀번호 확인"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            <p class="text-xs text-slate-400 pl-2">
+              * 8~20자, 일부 특수문자(!@#$%^&*) 허용
+            </p>
+          </div>
+
+          <!-- 이메일 -->
+          <div class="flex gap-3">
+            <input
+              type="email"
+              id="email"
+              placeholder="이메일 (example@email.com)"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            <button
+              onclick="sendVerification()"
+              id="btn-send-code"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증번호 전송
+            </button>
+          </div>
+
+          <!-- 인증번호 -->
+          <div class="flex gap-3">
+            <input
+              type="text"
+              id="authCode"
+              placeholder="인증번호 6자리"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm focus:bg-white focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            <button
+              onclick="verifyCode()"
+              id="btn-verify-code"
+              class="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition"
+            >
+              인증확인
+            </button>
+          </div>
+
+          <!-- 약관 동의 -->
+          <div class="flex items-center gap-3 px-2 pt-2">
+            <input
+              type="checkbox"
+              id="agree"
+              class="h-5 w-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+            />
+            <label
+              for="agree"
+              class="text-sm font-medium text-slate-600 cursor-pointer select-none"
+            >
+              <span class="text-purple-600">[필수]</span> 이용약관 및 개인정보
+              처리방침에 동의합니다.
+            </label>
+          </div>
+
+          <button
+            onclick="register()"
+            class="w-full rounded-2xl bg-purple-600 py-4 font-bold text-white tracking-wide hover:bg-purple-700 transition shadow-md mt-4"
+          >
+            가입하기
+          </button>
+        </div>
+
+        <div class="mt-8 text-center text-sm font-semibold text-slate-500">
+          이미 계정이 있으신가요?
+          <a
+            href="/login"
+            class="text-purple-600 hover:text-purple-800 transition-colors ml-1"
+            >로그인</a
+          >
+        </div>
+      </section>
+    </main>
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+      let isIdChecked = false;
+      let isNicknameChecked = false;
+      let isEmailVerified = false;
+
+      const ID_REGEX = /^[a-z0-9]{5,20}$/;
+      const PW_REGEX = /^[a-zA-Z0-9!@#$%^&*]{8,20}$/;
+
+      async function checkDuplicate(type) {
+        let inputId = "";
+        if (type === "id") inputId = "userId";
+        else if (type === "nickname") inputId = "nickname";
+        else inputId = "email";
+
+        const input = document.getElementById(inputId);
+        const value = input.value;
+
+        if (!value) return alert("내용을 입력해주세요.");
+
+        if (type === "id") {
+          if (!ID_REGEX.test(value))
+            return alert("아이디는 5~20자의 영문 소문자와 숫자만 가능합니다.");
+        }
+
+        try {
+          const res = await fetch("/auth/check-duplicate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, value }),
+          });
+          const data = await res.json();
+
+          if (data.message) return alert(data.message);
+
+          if (data.exists) {
+            alert("이미 사용 중입니다.");
+            if (type === "id") isIdChecked = false;
+            if (type === "nickname") isNicknameChecked = false;
+          } else {
+            alert("사용 가능합니다.");
+            if (type === "id") isIdChecked = true;
+            if (type === "nickname") isNicknameChecked = true;
+          }
+        } catch (e) {
+          console.error(e);
+          alert("오류 발생");
+        }
+      }
+
+      async function sendVerification() {
+        const email = document.getElementById("email").value;
+        const btn = document.getElementById("btn-send-code");
+        if (!email) return alert("이메일을 입력해주세요.");
+
+        btn.disabled = true;
+        btn.innerText = "전송중...";
+
+        try {
+          // 1. 중복 체크
+          const checkRes = await fetch("/auth/check-duplicate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "email", value: email }),
+          });
+          const checkData = await checkRes.json();
+
+          if (checkData.exists) {
+            btn.disabled = false;
+            btn.innerText = "인증번호 전송";
+            return alert("이미 가입된 이메일입니다.");
+          }
+
+          // 2. 인증번호 전송 (type: 'register' 추가)
+          const res = await fetch("/auth/send-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, type: "register" }), // [수정됨] type 추가
+          });
+          const data = await res.json();
+
+          alert(data.message);
+          btn.innerText = "재전송";
+        } catch (e) {
+          console.error(e);
+          alert("이메일 전송 실패");
+          btn.innerText = "인증번호 전송";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function verifyCode() {
+        const code = document.getElementById("authCode").value;
+        if (!code) return alert("인증번호를 입력해주세요.");
+
+        try {
+          const res = await fetch("/auth/verify-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            alert("인증되었습니다.");
+            isEmailVerified = true;
+            document.getElementById("email").readOnly = true;
+            document.getElementById("authCode").readOnly = true;
+            document.getElementById("btn-verify-code").innerText = "완료";
+            document
+              .getElementById("btn-verify-code")
+              .classList.add(
+                "bg-green-500",
+                "text-white",
+                "border-transparent"
+              );
+          } else {
+            alert(data.message);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("확인 중 오류가 발생했습니다.");
+        }
+      }
+
+      async function register() {
+        const userId = document.getElementById("userId").value;
+        const nickname = document.getElementById("nickname").value;
+        const password = document.getElementById("password").value;
+        const passwordConfirm =
+          document.getElementById("passwordConfirm").value;
+        const email = document.getElementById("email").value;
+        const agree = document.getElementById("agree").checked;
+
+        if (!userId || !nickname || !password || !email)
+          return alert("모든 필드를 입력해주세요.");
+        if (!isIdChecked) return alert("아이디 중복 확인을 해주세요.");
+        if (!isNicknameChecked) return alert("닉네임 중복 확인을 해주세요.");
+
+        if (!PW_REGEX.test(password))
+          return alert(
+            "비밀번호는 8~20자이며, 특수문자는 !@#$%^&* 만 허용됩니다."
+          );
+        if (password !== passwordConfirm)
+          return alert("비밀번호가 일치하지 않습니다.");
+
+        if (!isEmailVerified) return alert("이메일 인증을 완료해주세요.");
+        if (!agree) return alert("약관에 동의해주세요.");
+
+        try {
+          const res = await fetch("/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, nickname, password, email }),
+          });
+          const text = await res.text();
+          document.open();
+          document.write(text);
+          document.close();
+        } catch (e) {
+          console.error(e);
+          alert("가입 요청 중 오류가 발생했습니다.");
+        }
+      }
+    </script>
+  </body>
+</html>
