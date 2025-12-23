@@ -1,0 +1,248 @@
+==============================================================================
+-- 1. EaGCart_Members (회원) - 유추 기반
+-- ==============================================================================
+CREATE TABLE EaGCart_Members (
+    USER_CODE       VARCHAR2(20)    NOT NULL,
+    USER_ID         VARCHAR2(50)    NOT NULL UNIQUE,
+    USER_PASSWORD   VARCHAR2(255)   NOT NULL,
+    USER_NAME       VARCHAR2(100)   NOT NULL,
+    EMAIL           VARCHAR2(100)   UNIQUE,
+    ADDRESS         VARCHAR2(255),
+    REGISTRATION_DATE DATE DEFAULT SYSDATE NOT NULL,
+    STATUS          VARCHAR2(10) DEFAULT 'ACTIVE' NOT NULL,
+    CONSTRAINT PK_EaGCart_Members PRIMARY KEY (USER_CODE)
+);
+
+-- ==============================================================================
+-- 2. EaGCart_Products (상품) - 유추 기반
+-- ==============================================================================
+CREATE TABLE EaGCart_Products (
+    PRODUCT_CODE            VARCHAR2(20)   NOT NULL,
+    PRODUCT_NAME            VARCHAR2(100)  NOT NULL,
+    PRODUCT_DESCRIPTION     CLOB,
+    SELLING_PRICE           NUMBER         NOT NULL,
+    ORIGINAL_PRICE          NUMBER         NOT NULL,
+    REGISTRATION_DATE       DATE           DEFAULT SYSDATE NOT NULL,
+    LAST_MODIFIED_DATE      DATE           DEFAULT SYSDATE NOT NULL,
+    CURRENT_STOCK           NUMBER         DEFAULT 0 NOT NULL,
+    OPTIMAL_STOCK           NUMBER         DEFAULT 0 NOT NULL,
+    STATUS                  VARCHAR2(20)   NOT NULL,
+    CONSTRAINT PK_EaGCart_Products PRIMARY KEY (PRODUCT_CODE)
+);
+
+-- =========================================================
+-- [기존 존재 가정]
+-- EaGCart_Members (유저/회원)
+-- EaGCart_Products (상품)
+-- =========================================================
+
+-- =============================================
+-- Table No. 3: EaGCart_Wishlists
+-- =============================================
+CREATE TABLE EaGCart_Wishlists (
+    USER_CODE       VARCHAR2(20) NOT NULL,
+    PRODUCT_CODE    VARCHAR2(20) NOT NULL,
+    CONSTRAINT FK_Wishlists_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE),
+    CONSTRAINT FK_Wishlists_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+
+-- =============================================
+-- Table No. 4: EaGCart_Carts
+-- =============================================
+CREATE TABLE EaGCart_Carts (
+    USER_CODE       VARCHAR2(20) NOT NULL,
+    PRODUCT_CODE    VARCHAR2(20) NOT NULL,
+    COUNT         NUMBER       NOT NULL,
+    CONSTRAINT FK_Carts_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE),
+    CONSTRAINT FK_Carts_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+
+-- =============================================
+-- Table No. 5: EaGCart_Orders
+-- =============================================
+CREATE TABLE EaGCart_Orders (
+    ORDER_CODE          VARCHAR2(20)  NOT NULL,
+    USER_CODE           VARCHAR2(20)  NOT NULL,
+    ORDER_DATE          DATE          NOT NULL,
+    PAYMENT_AMOUNT      NUMBER        NOT NULL,
+    PHONE_NUMBER     VARCHAR2(20),
+    SHIPPING_ADDRESS    VARCHAR2(255) NOT NULL,
+    DELIVERY_REQUEST VARCHAR2(255)
+    DELIVERY_DATE       DATE,
+    DELIVERY_STATUS     VARCHAR2(20)  NOT NULL,
+    CONSTRAINT PK_Orders PRIMARY KEY (ORDER_CODE),
+    CONSTRAINT FK_Orders_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE)
+);
+
+-- =============================================
+-- Table No. 6: EaGCart_Order_Items
+-- =============================================
+CREATE TABLE EaGCart_Order_Items (
+    ORDER_CODE      VARCHAR2(20) NOT NULL,
+    PRODUCT_CODE    VARCHAR2(20) NOT NULL,
+    ITEM_PRICE      NUMBER       NOT NULL,
+    COUNT         NUMBER       NOT NULL,
+    STATUS          VARCHAR2(20) NOT NULL,
+    CLAIM_REASON VARCHAR2(255),
+    CONSTRAINT FK_OrderItems_Order FOREIGN KEY (ORDER_CODE) REFERENCES EaGCart_Orders(ORDER_CODE),
+    CONSTRAINT FK_OrderItems_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+
+-- =============================================
+-- Table No. 7: EaGCart_Inquiries
+-- =============================================
+CREATE TABLE EaGCart_Inquiries (
+    INQUIRY_CODE        VARCHAR2(20)  NOT NULL,
+    USER_CODE           VARCHAR2(20)  NOT NULL,
+    TITLE               VARCHAR2(100) NOT NULL,
+    CONTENT             CLOB          NOT NULL,
+    REGISTRATION_DATE   DATE          NOT NULL,
+    ANSWER_CONTENT      CLOB,
+    ANSWER_DATE         DATE,
+    STATUS              VARCHAR2(10)  NOT NULL,
+    CONSTRAINT PK_Inquiries PRIMARY KEY (INQUIRY_CODE),
+    CONSTRAINT FK_Inquiries_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE)
+);
+
+-- =============================================
+-- Table No. 8: EaGCart_Coupons
+-- =============================================
+CREATE TABLE EaGCart_Coupons (
+    COUPON_CODE         VARCHAR2(20)  NOT NULL,
+    COUPON_NAME         VARCHAR2(100) NOT NULL,
+    COUPON_DESCRIPTION  VARCHAR2(500),
+    DISCOUNT_AMOUNT     NUMBER,
+    DISCOUNT_RATE       NUMBER,
+    MAX_DISCOUNT_AMOUNT NUMBER,
+    START_DATE          DATE          NOT NULL,
+    END_DATE            DATE          NOT NULL,
+    STATUS              VARCHAR2(10)  NOT NULL,
+    CONSTRAINT PK_Coupons PRIMARY KEY (COUPON_CODE)
+);
+
+-- =============================================
+-- Table No. 9: EaGCart_User_Coupons
+-- =============================================
+CREATE TABLE EaGCart_User_Coupons (
+    USER_CODE       VARCHAR2(20) NOT NULL,
+    COUPON_CODE     VARCHAR2(20) NOT NULL,
+    STATUS     VARCHAR2(20) DEFAULT 'UNUSED' NOT NULL,
+    CONSTRAINT FK_UserCoupons_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE),
+    CONSTRAINT FK_UserCoupons_Coupon FOREIGN KEY (COUPON_CODE) REFERENCES EaGCart_Coupons(COUPON_CODE)
+);
+
+-- =============================================
+-- Table No. 10: EaGCart_Devices
+-- =============================================
+CREATE TABLE EaGCart_Devices (
+    DEVICE_CODE     VARCHAR2(20)  NOT NULL,
+    DEVICE_NAME     VARCHAR2(100) NOT NULL,
+    CONSTRAINT PK_Devices PRIMARY KEY (DEVICE_CODE)
+);
+
+-- =============================================
+-- Table No. 11: EaGCart_Categories
+-- =============================================
+CREATE TABLE EaGCart_Categories (
+    CATEGORY_CODE   VARCHAR2(20)  NOT NULL,
+    CATEGORY_NAME   VARCHAR2(100),
+    CONSTRAINT PK_Categories PRIMARY KEY (CATEGORY_CODE)
+);
+
+-- =============================================
+-- Table No. 12: EaGCart_Product_Devices
+-- =============================================
+CREATE TABLE EaGCart_Product_Devices (
+    PRODUCT_CODE    VARCHAR2(20) NOT NULL,
+    DEVICE_CODE     VARCHAR2(20) NOT NULL,
+    CONSTRAINT FK_ProdDevices_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE),
+    CONSTRAINT FK_ProdDevices_Device FOREIGN KEY (DEVICE_CODE) REFERENCES EaGCart_Devices(DEVICE_CODE)
+);
+
+-- =============================================
+-- Table No. 13: EaGCart_Product_Categories
+-- =============================================
+CREATE TABLE EaGCart_Product_Categories (
+    PRODUCT_CODE    VARCHAR2(20) NOT NULL,
+    CATEGORY_CODE   VARCHAR2(20) NOT NULL,
+    CONSTRAINT FK_ProdCategories_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE),
+    CONSTRAINT FK_ProdCategories_Category FOREIGN KEY (CATEGORY_CODE) REFERENCES EaGCart_Categories(CATEGORY_CODE)
+);
+
+-- =============================================
+-- Table No. 14: EaGCart_Discounts
+-- =============================================
+CREATE TABLE EaGCart_Discounts (
+    DISCOUNT_CODE       VARCHAR2(20) NOT NULL,
+    PRODUCT_CODE        VARCHAR2(20) NOT NULL,
+    DISCOUNT_AMOUNT     NUMBER,
+    DISCOUNT_RATE       NUMBER,
+    START_DATE          DATE,
+    END_DATE            DATE,
+    STATUS              VARCHAR2(10),
+    CONSTRAINT PK_Discounts PRIMARY KEY (DISCOUNT_CODE),
+    CONSTRAINT FK_Discounts_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+
+-- =============================================
+-- Table No. 15: EaGCart_Stock_Entries
+-- =============================================
+CREATE TABLE EaGCart_Stock_Entries (
+    INBOUND_CODE      VARCHAR2(20) NOT NULL,
+    PRODUCT_CODE      VARCHAR2(20) NOT NULL,
+    INBOUND_QUANTITY  NUMBER,
+    INBOUND_DATE      DATE,
+    CONSTRAINT PK_StockEntries PRIMARY KEY (INBOUND_CODE),
+    CONSTRAINT FK_StockEntries_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+
+-- =============================================
+-- Table No. 16: EaGCart_Reviews
+-- =============================================
+CREATE TABLE EaGCart_Reviews (
+    REVIEW_CODE         VARCHAR2(20)   NOT NULL,
+    PRODUCT_CODE        VARCHAR2(20)   NOT NULL,
+    USER_CODE           VARCHAR2(20)   NOT NULL,
+    TITLE               VARCHAR2(100),
+    RATING              NUMBER,
+    CONTENT             VARCHAR2(1000),
+    REGISTRATION_DATE   DATE,
+    LAST_MODIFIED_DATE  DATE,
+    STATUS              VARCHAR2(10),
+    CONSTRAINT PK_Reviews PRIMARY KEY (REVIEW_CODE),
+    CONSTRAINT FK_Reviews_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE),
+    CONSTRAINT FK_Reviews_User FOREIGN KEY (USER_CODE) REFERENCES EaGCart_Members(USER_CODE)
+);
+
+-- =============================================
+-- Table No. 17: EaGCart_Review_Images
+-- =============================================
+CREATE TABLE EaGCart_Review_Images (
+    REVIEW_CODE     VARCHAR2(20)  NOT NULL,
+    IMAGE_SEQUENCE  NUMBER,
+    IMAGE_PATH      VARCHAR2(255),
+    CONSTRAINT FK_ReviewImages_Review FOREIGN KEY (REVIEW_CODE) REFERENCES EaGCart_Reviews(REVIEW_CODE)
+);
+
+-- =============================================
+-- Table No. 18: EaGCart_Product_Images
+-- =============================================
+CREATE TABLE EaGCart_Product_Images (
+    PRODUCT_CODE    VARCHAR2(20)  NOT NULL,
+    IMAGE_SEQUENCE  NUMBER,
+    IMAGE_PATH      VARCHAR2(255),
+    CONSTRAINT FK_ProductImages_Product FOREIGN KEY (PRODUCT_CODE) REFERENCES EaGCart_Products(PRODUCT_CODE)
+);
+-- ==============================================================================
+-- 19. EaGCart_Banner (배너) - 이미지 설계서 기반
+-- ==============================================================================
+CREATE TABLE EaGCart_Banner (
+    BANNER_NUM    NUMBER         NOT NULL, 
+    DISPLAY_ORDER NUMBER DEFAULT 0,
+    IMAGE_PATH    VARCHAR2(255)  NOT NULL,
+    LINK_TYPE     VARCHAR2(20),
+    LINK_CONTENT  VARCHAR2(500),
+    CONSTRAINT PK_EaGCart_Banner PRIMARY KEY (BANNER_NUM)
+);
+
+-- ==============================================================================
